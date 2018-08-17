@@ -1,6 +1,11 @@
 -- http://www.kfish.org/boids/pseudocode.html
 
-local POINTS = 96
+local Rules = require('rules')
+local Vectors = require('vectors')
+
+local BOIDS = 256
+
+local SPEED_LIMIT = 64
 
 local COLORS = {
   { 1.0, 0.0, 0.0 },
@@ -12,45 +17,15 @@ local COLORS = {
   { 1.0, 1.0, 1.0 }
 }
 
-local SET_1 = {
-  'share an idea',
-  'be thankful',
-  'recognize someone',
-  'think...',
-  'set a goal',
-  'be sincere'
-}
-local SET_2= {
-  'genuinely',
-  'x 2',
-  'right away',
-  'with passion',
-  'today',
-  'without fear'
+local RULES = {
+  { rule = Rules.alignment, weight = 2 },
+  { rule = Rules.cohesion, weight = 3 },
+  { rule = Rules.separation, weight = 4 },
+  { rule = Rules.stay_visible, weight = 1 },
 }
 
-local _ticks = 0.0
-local _phrase = nil
-local _points = {}
+local _boids = {}
 local _threshold = 128.0
-
-local function distance_squared(p0, p1)
-  local a = p0.x - p1.x
-  local b = p0.y - p1.y
-  return (a * a) + (b * b)
-end
-
-local function distance(p0, p1)
-  return math.sqrt(distance_squared(p0, p1))
-end
-
-local function influence(p0, p1, radius)
-  local d = distance(p0, p1)
-  if d > radius then
-    return nil
-  end
-  return (radius - d) / radius
-end
 
 local function lerp(a, b, ratio)
   if type(a) == 'table' then
@@ -64,17 +39,20 @@ local function lerp(a, b, ratio)
   end
 end
 
-local function spawn(bundle)
+local function spawn(boids)
   local x = math.random(0, love.graphics.getWidth() - 1)
   local y = math.random(0, love.graphics.getWidth() - 1)
-  local speed = math.random(4, 8)
   local angle = math.random() * math.pi
   local color =  COLORS[math.random(1, #COLORS)]
-  table.insert(bundle, { color = color, x = x, y = y, vx = math.cos(angle) * speed, vy = math.sin(angle) * speed })
+  table.insert(boids, {
+    color = color,
+    position = { x = x, y = y },
+    velocity = { x = math.cos(angle) * SPEED_LIMIT, y = math.sin(angle) * SPEED_LIMIT }
+  })
 end
 
-local function kill(bundle)
-  table.remove(bundle)
+local function kill(boids)
+  table.remove(boids)
 end
 
 function love.load(args)
@@ -90,54 +68,32 @@ function love.load(args)
   for _ = 1, 1000 do
     math.random()
   end
-  _phrase = SET_1[math.random(1, 6)] .. ' ' .. SET_2[math.random(1, 6)]
 
-  for _ = 1, POINTS do
-    spawn(_points)
+  for _ = 1, BOIDS do
+    spawn(_boids)
   end
 end
 
 function love.draw()
-  for i = 1, #_points do
-    local p0 = _points[i]
-    for j = i + 1, #_points do
-      local p1 = _points[j]
-      local v = influence(p0, p1, _threshold)
-      if v then
-        local r, g, b = unpack(lerp(p0.color, p1.color, v))
---        love.graphics.setColor(0.25, 0.25, 0.75, v)
-        love.graphics.setColor(r, g, b, v)
-        love.graphics.line(p0.x, p0.y, p1.x, p1.y)
-      end
-    end
-    love.graphics.setColor(1.0, 1.0, 1.0)
-    love.graphics.circle('fill', p0.x, p0.y, 2)
+  for _, boid in ipairs(_boids) do
+    local position = boid.position
+    local velocity = boid.velocity
+    local r, g, b = unpack(boid.color)
+    love.graphics.setColor(r, g, b)
+--    love.graphics.line(position.x, position.y, position.x - velocity.x, position.y - velocity.y)
+--    love.graphics.setColor(1.0, 1.0, 1.0)
+    love.graphics.circle('fill', position.x, position.y, 2)
   end
---[[
-  local x, y = love.mouse.getX(), love.mouse.getY()
-  local w, h = 16, 16
-  local s = 2
-  love.graphics.push('all')
-    love.graphics.setColor(1.0, 1.0, 1.0)
-    love.graphics.rectangle('fill', x - s/2, y - h/2, s, h)
-    love.graphics.rectangle('fill', x - h/2, y - s/2, w, s)
-  love.graphics.pop()
-]]
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
-  love.graphics.print(string.format('%d point(s) w/ threshold %d (%s)', #_points, _threshold, love.graphics.getBlendMode()), 0, 16)
-  love.graphics.print(_phrase, 0, love.graphics.getHeight() - 16)
+  love.graphics.print(string.format('%d point(s) w/ threshold %d (%s)', #_boids, _threshold, love.graphics.getBlendMode()), 0, 16)
 end
 
 function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
-    kill(_points)
+    kill(_boids)
   elseif key == 'f2' then
-    spawn(_points)
-  elseif key == 'f3' then
-    _threshold = math.max(_threshold - 1, 0)
-  elseif key == 'f4' then
-    _threshold = math.min(_threshold + 1, 999)
+    spawn(_boids)
   elseif key == 'f12' then
     local mode = love.graphics.getBlendMode()
     love.graphics.setBlendMode(mode == 'add' and 'alpha' or 'add')
@@ -145,32 +101,15 @@ function love.keypressed(key, scancode, isrepeat)
 end
 
 function love.update(dt)
-  _ticks = _ticks + dt
-  if _ticks > 5.0 then
-    _phrase = SET_1[math.random(1, 6)] .. ' ' .. SET_2[math.random(1, 6)]
-    _ticks = 0.0
-  end
+  for _, boid in ipairs(_boids) do
+    local neighbours = Rules.find_neighbours(boid, _boids, 16)
+    local velocity = Vectors.new()
+    for _, rule in ipairs(RULES) do
+      velocity = Vectors.add(velocity, rule.rule(boid, neighbours, rule.weight))
+    end
 
-  for _, point in ipairs(_points) do
-    local x = point.x + point.vx * dt
-    local y = point.y + point.vy * dt
-    if x < 0 then
-      x = 0
-      point.vx = -point.vx
-    end
-    if x >= love.graphics.getWidth() then
-      x = love.graphics.getWidth()
-      point.vx = -point.vx
-    end
-    if y < 0 then
-      y = 0
-      point.vy = -point.vy
-    end
-    if y >= love.graphics.getHeight() then
-      y = love.graphics.getHeight()
-      point.vy = -point.vy
-    end
-    point.x = x
-    point.y = y
+    boid.velocity = Vectors.normalize(Vectors.add(boid.velocity, velocity), SPEED_LIMIT)
+
+    boid.position = Vectors.add(boid.position, Vectors.scale(boid.velocity, dt))
   end
 end
