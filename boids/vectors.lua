@@ -33,7 +33,7 @@ function Vectors.from_polar(l, a)
 end
 
 function Vectors.to_polar(v)
---  return { x = v.x * s, y = v.y * s }
+  return Vectors.length(v), math.atan2(v.y, v.x)
 end
 
 return Vectors

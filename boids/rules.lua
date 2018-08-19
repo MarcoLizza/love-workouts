@@ -35,7 +35,7 @@ function Rules.alignment(self, neighbours, weight)
   for _, boid in ipairs(neighbours) do
     velocity = Vectors.add(velocity, boid.velocity)
   end
-  velocity = Vectors.scale(velocity, 1 / #neighbours)
+  -- velocity = Vectors.scale(velocity, 1 / #neighbours)
   return Vectors.normalize(velocity, weight)
 end
 
@@ -48,7 +48,7 @@ function Rules.cohesion(self, neighbours, weight)
     position = Vectors.add(position, boid.position)
   end
   local velocity = Vectors.sub(position, self.position)
-  velocity = Vectors.scale(velocity, 1 / #neighbours)
+  -- velocity = Vectors.scale(velocity, 1 / #neighbours)
   return Vectors.normalize(velocity, weight)
 end
 

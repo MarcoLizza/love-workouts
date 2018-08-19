@@ -3,9 +3,10 @@
 local Rules = require('rules')
 local Vectors = require('vectors')
 
-local BOIDS = 256
+local BOIDS = 64
 
-local SPEED_LIMIT = 64
+local MINIMUM_SPEED = 8
+local MAXIMUM_SPEED = 192
 
 local COLORS = {
   { 1.0, 0.0, 0.0 },
@@ -41,13 +42,13 @@ end
 
 local function spawn(boids)
   local x = math.random(0, love.graphics.getWidth() - 1)
-  local y = math.random(0, love.graphics.getWidth() - 1)
-  local angle = math.random() * math.pi
+  local y = math.random(0, love.graphics.getHeight() - 1)
+  local angle = math.random() * 2 * math.pi
   local color =  COLORS[math.random(1, #COLORS)]
   table.insert(boids, {
     color = color,
-    position = { x = x, y = y },
-    velocity = { x = math.cos(angle) * SPEED_LIMIT, y = math.sin(angle) * SPEED_LIMIT }
+    position = Vectors.new(x, y),
+    velocity = Vectors.from_polar(MAXIMUM_SPEED, angle)
   })
 end
 
@@ -101,15 +102,24 @@ function love.keypressed(key, scancode, isrepeat)
 end
 
 function love.update(dt)
+  local velocities = {}
   for _, boid in ipairs(_boids) do
     local neighbours = Rules.find_neighbours(boid, _boids, 16)
     local velocity = Vectors.new()
     for _, rule in ipairs(RULES) do
       velocity = Vectors.add(velocity, rule.rule(boid, neighbours, rule.weight))
     end
+    velocities[boid] = velocity
+  end
 
-    boid.velocity = Vectors.normalize(Vectors.add(boid.velocity, velocity), SPEED_LIMIT)
-
+  for boid, velocity in pairs(velocities) do
+    boid.velocity = Vectors.add(boid.velocity, velocity)
+    if Vectors.length(boid.velocity) < MINIMUM_SPEED then
+      boid.velocity = Vectors.normalize(boid.velocity, MINIMUM_SPEED)
+    end
+    if Vectors.length(boid.velocity) > MAXIMUM_SPEED then
+      boid.velocity = Vectors.normalize(boid.velocity, MAXIMUM_SPEED)
+    end
     boid.position = Vectors.add(boid.position, Vectors.scale(boid.velocity, dt))
   end
 end
