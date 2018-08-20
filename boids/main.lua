@@ -31,9 +31,11 @@ local RULES = {
   { rule = Rules.cohesion, weight = 3 },
   { rule = Rules.separation, weight = 4 },
   { rule = Rules.stay_visible, weight = 1 },
+  { rule = Rules.avoid_obstacle, weight = 1 },
 }
 
 local _boids = {}
+local _obstacles = {}
 local _radius = INFLUENCE_RADIUS
 local _debug = false
 
@@ -71,7 +73,7 @@ function love.load(args)
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
   love.graphics.setBlendMode('add')
 
-  love.mouse.setVisible(false)
+  love.mouse.setVisible(true)
   love.mouse.setGrabbed(false)
 
   math.randomseed(os.time())
@@ -85,6 +87,11 @@ function love.load(args)
 end
 
 function love.draw()
+  for _, obstacle in ipairs(_obstacles) do
+    love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+    love.graphics.circle('fill', obstacle.x, obstacle.y, 2)
+  end
+
   for _, boid in ipairs(_boids) do
     local position = boid.position
     local velocity = boid.velocity
@@ -109,6 +116,20 @@ function love.draw()
   love.graphics.print(string.format('%d boids(s) w/ radius %d', #_boids, _radius), 0, 16)
 end
 
+function love.mousepressed(x, y, button, istouch, presses)
+  local point = Vector.new(x, y)
+
+  for index, obstacle in ipairs(_obstacles) do
+    local distance = point:distance(obstacle)
+    if distance < 12 then
+      _obstacles[index] = nil
+      return
+    end
+  end
+
+  _obstacles[#_obstacles + 1] = point
+end
+
 function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
     kill(_boids)
@@ -129,7 +150,7 @@ function love.update(dt)
     local neighbours = Rules.find_neighbours(boid, _boids, _radius)
     local velocity = Vector.new()
     for _, rule in ipairs(RULES) do
-      velocity:add(rule.rule(boid, neighbours, rule.weight))
+      velocity:add(rule.rule(boid, neighbours, { obstacles = _obstacles, weight = rule.weight }))
     end
     velocities[boid] = velocity
   end
