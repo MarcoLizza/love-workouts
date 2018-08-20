@@ -65,8 +65,13 @@ function Rules.avoid_obstacle(self, neighbours, params)
     return velocity
   end
   for _, obstacle in ipairs(params.obstacles) do
-    velocity:add(self.position)
-    velocity:sub(obstacle)
+    if obstacle:distance(self.position) <= 16 then
+      velocity:add(self.position)
+      velocity:sub(obstacle)
+    end
+  end
+  if velocity:is_zero() then
+    return velocity
   end
   return velocity:normalize(params.weight)
 end

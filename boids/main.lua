@@ -28,10 +28,11 @@ local COLORS = {
 
 local RULES = {
   { rule = Rules.alignment, weight = 2 },
-  { rule = Rules.cohesion, weight = 3 },
+  { rule = Rules.cohesion, weight = 4 },
   { rule = Rules.separation, weight = 4 },
   { rule = Rules.stay_visible, weight = 1 },
-  { rule = Rules.avoid_obstacle, weight = 1 },
+  { rule = Rules.avoid_obstacle, weight = 5 },
+  -- add perching?
 }
 
 local _boids = {}
@@ -88,8 +89,8 @@ end
 
 function love.draw()
   for _, obstacle in ipairs(_obstacles) do
-    love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
-    love.graphics.circle('fill', obstacle.x, obstacle.y, 2)
+    love.graphics.setColor(1.0, 1.0, 1.0, 0.25)
+    love.graphics.circle('fill', obstacle.x, obstacle.y, 4)
   end
 
   for _, boid in ipairs(_boids) do
@@ -122,7 +123,7 @@ function love.mousepressed(x, y, button, istouch, presses)
   for index, obstacle in ipairs(_obstacles) do
     local distance = point:distance(obstacle)
     if distance < 12 then
-      _obstacles[index] = nil
+      table.remove(_obstacles, index)
       return
     end
   end
@@ -147,7 +148,7 @@ end
 function love.update(dt)
   local velocities = {}
   for _, boid in ipairs(_boids) do
-    local neighbours = Rules.find_neighbours(boid, _boids, _radius)
+    local neighbours = Rules.find_neighbours(boid, _boids, _radius) -- obstacles should be static boids?
     local velocity = Vector.new()
     for _, rule in ipairs(RULES) do
       velocity:add(rule.rule(boid, neighbours, { obstacles = _obstacles, weight = rule.weight }))
