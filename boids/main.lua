@@ -95,7 +95,7 @@ function love.draw()
     local size = ((MAXIMUM_SPEED_SQUARED - speed) / (MAXIMUM_SPEED_SQUARED - MINIMUM_SPEED_SQUARED)) * (MAXIMUM_SIZE - MINIMUM_SIZE) + MINIMUM_SIZE
     love.graphics.circle('fill', position.x, position.y, size)
 
-    if not debug then
+    if _debug then
       velocity = velocity:clone():normalize(_radius)
       love.graphics.setColor(1.0, 1.0, 1.0, 0.25)
       love.graphics.line(position.x, position.y, position.x + velocity.x, position.y + velocity.y)
@@ -118,7 +118,7 @@ function love.keypressed(key, scancode, isrepeat)
     _radius = _radius - 1
   elseif key == 'f4' then
     _radius = _radius + 1
-  elseif key == 'f10' then
+  elseif key == 'f12' then
     _debug = not _debug
   end
 end
