@@ -1,12 +1,20 @@
 -- http://www.kfish.org/boids/pseudocode.html
 
 local Rules = require('rules')
-local Vectors = require('vectors')
+local Vector = require('vector')
 
-local BOIDS = 64
+local BOIDS = 128
 
 local MINIMUM_SPEED = 8
-local MAXIMUM_SPEED = 192
+local MAXIMUM_SPEED = 256
+
+local MINIMUM_SPEED_SQUARED = MINIMUM_SPEED * MINIMUM_SPEED
+local MAXIMUM_SPEED_SQUARED = MAXIMUM_SPEED * MAXIMUM_SPEED
+
+local MINIMUM_SIZE = 1
+local MAXIMUM_SIZE = 6
+
+local INFLUENCE_RADIUS = 16
 
 local COLORS = {
   { 1.0, 0.0, 0.0 },
@@ -26,7 +34,8 @@ local RULES = {
 }
 
 local _boids = {}
-local _threshold = 128.0
+local _radius = INFLUENCE_RADIUS
+local _debug = false
 
 local function lerp(a, b, ratio)
   if type(a) == 'table' then
@@ -47,8 +56,8 @@ local function spawn(boids)
   local color =  COLORS[math.random(1, #COLORS)]
   table.insert(boids, {
     color = color,
-    position = Vectors.new(x, y),
-    velocity = Vectors.from_polar(MAXIMUM_SPEED, angle)
+    position = Vector.new(x, y),
+    velocity = Vector.from_polar(angle, MINIMUM_SPEED)
   })
 end
 
@@ -80,14 +89,24 @@ function love.draw()
     local position = boid.position
     local velocity = boid.velocity
     local r, g, b = unpack(boid.color)
+
     love.graphics.setColor(r, g, b)
---    love.graphics.line(position.x, position.y, position.x - velocity.x, position.y - velocity.y)
---    love.graphics.setColor(1.0, 1.0, 1.0)
-    love.graphics.circle('fill', position.x, position.y, 2)
+    local speed = velocity:length_squared()
+    local size = ((MAXIMUM_SPEED_SQUARED - speed) / (MAXIMUM_SPEED_SQUARED - MINIMUM_SPEED_SQUARED)) * (MAXIMUM_SIZE - MINIMUM_SIZE) + MINIMUM_SIZE
+    love.graphics.circle('fill', position.x, position.y, size)
+
+    if not debug then
+      velocity = velocity:clone():normalize(_radius)
+      love.graphics.setColor(1.0, 1.0, 1.0, 0.25)
+      love.graphics.line(position.x, position.y, position.x + velocity.x, position.y + velocity.y)
+
+      love.graphics.setColor(1.0, 1.0, 1.0, 0.25)
+      love.graphics.circle('line', position.x, position.y, _radius)
+    end
   end
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
-  love.graphics.print(string.format('%d point(s) w/ threshold %d (%s)', #_boids, _threshold, love.graphics.getBlendMode()), 0, 16)
+  love.graphics.print(string.format('%d boids(s) w/ radius %d', #_boids, _radius), 0, 16)
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -95,31 +114,34 @@ function love.keypressed(key, scancode, isrepeat)
     kill(_boids)
   elseif key == 'f2' then
     spawn(_boids)
-  elseif key == 'f12' then
-    local mode = love.graphics.getBlendMode()
-    love.graphics.setBlendMode(mode == 'add' and 'alpha' or 'add')
+  elseif key == 'f3' then
+    _radius = _radius - 1
+  elseif key == 'f4' then
+    _radius = _radius + 1
+  elseif key == 'f10' then
+    _debug = not _debug
   end
 end
 
 function love.update(dt)
   local velocities = {}
   for _, boid in ipairs(_boids) do
-    local neighbours = Rules.find_neighbours(boid, _boids, 16)
-    local velocity = Vectors.new()
+    local neighbours = Rules.find_neighbours(boid, _boids, _radius)
+    local velocity = Vector.new()
     for _, rule in ipairs(RULES) do
-      velocity = Vectors.add(velocity, rule.rule(boid, neighbours, rule.weight))
+      velocity:add(rule.rule(boid, neighbours, rule.weight))
     end
     velocities[boid] = velocity
   end
 
   for boid, velocity in pairs(velocities) do
-    boid.velocity = Vectors.add(boid.velocity, velocity)
-    if Vectors.length(boid.velocity) < MINIMUM_SPEED then
-      boid.velocity = Vectors.normalize(boid.velocity, MINIMUM_SPEED)
+    boid.velocity:add(velocity)
+    local speed_squared = boid.velocity:length_squared()
+    if speed_squared < MINIMUM_SPEED_SQUARED then
+      boid.velocity = boid.velocity:normalize(MINIMUM_SPEED)
+    elseif speed_squared > MAXIMUM_SPEED_SQUARED then
+      boid.velocity = boid.velocity:normalize(MAXIMUM_SPEED)
     end
-    if Vectors.length(boid.velocity) > MAXIMUM_SPEED then
-      boid.velocity = Vectors.normalize(boid.velocity, MAXIMUM_SPEED)
-    end
-    boid.position = Vectors.add(boid.position, Vectors.scale(boid.velocity, dt))
+    boid.position:add(boid.velocity:clone():scale(dt))
   end
 end

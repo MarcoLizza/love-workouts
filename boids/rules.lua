@@ -1,13 +1,14 @@
-local Vectors = require('vectors')
+local Vector = require('vector')
 
 local Rules = {}
 
 function Rules.find_neighbours(self, boids, radius)
+  local radius_squared = radius * radius
   local neighbours = {}
   for _, boid in ipairs(boids) do
     if self ~= boid then
-        local distance = Vectors.sub(boid.position, self.position)
-        if Vectors.length(distance) <= radius then
+        local distance_squared = self.position:distance_squared(boid.position)
+        if distance_squared <= radius_squared then
           neighbours[#neighbours + 1] = boid
         end
       end
@@ -16,46 +17,46 @@ function Rules.find_neighbours(self, boids, radius)
 end
 
 function Rules.separation(self, neighbours, weight)
-  local velocity = Vectors.new()
+  local velocity = Vector.new()
   if #neighbours == 0 then
     return velocity
   end
   for _, boid in ipairs(neighbours) do
-    local distance = Vectors.sub(self.position, boid.position)
-    velocity = Vectors.add(velocity, distance)
+--    local distance = self.position:clone():sub(boid.position)
+--    velocity:add(distance)
+    velocity:add(self.position)
+    velocity:sub(boid.position)
   end
-  return Vectors.normalize(velocity, weight)
+  return velocity:normalize(weight)
 end
 
 function Rules.alignment(self, neighbours, weight)
-  local velocity = Vectors.new()
+  local velocity = Vector.new()
   if #neighbours == 0 then
     return velocity
   end
   for _, boid in ipairs(neighbours) do
-    velocity = Vectors.add(velocity, boid.velocity)
+    velocity:add(boid.velocity)
   end
-  -- velocity = Vectors.scale(velocity, 1 / #neighbours)
-  return Vectors.normalize(velocity, weight)
+  return velocity:normalize(weight)
 end
 
 function Rules.cohesion(self, neighbours, weight)
-  local position = Vectors.new()
+  local position = Vector.new()
   if #neighbours == 0 then
     return position
   end
   for _, boid in ipairs(neighbours) do
-    position = Vectors.add(position, boid.position)
+    position:add(boid.position)
   end
-  local velocity = Vectors.sub(position, self.position)
-  -- velocity = Vectors.scale(velocity, 1 / #neighbours)
-  return Vectors.normalize(velocity, weight)
+  local velocity = position:clone():sub(self.position)
+  return velocity:normalize(weight)
 end
 
 function Rules.stay_visible(self, neighbours, weight)
-  local center = Vectors.new(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
-  local velocity = Vectors.sub(center, self.position)
-  return Vectors.normalize(velocity, weight)
+  local velocity = Vector.new(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
+  velocity:sub(self.position)
+  return velocity:normalize(weight)
 end
 
 return Rules
