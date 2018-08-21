@@ -1,7 +1,9 @@
 -- http://www.kfish.org/boids/pseudocode.html
 
+local Arrays = require('lib/collections/arrays')
+local Vector = require('lib/math/vector')
+local Math = require('lib/math/math')
 local Rules = require('rules')
-local Vector = require('vector')
 
 local BOIDS = 128
 
@@ -16,14 +18,35 @@ local MAXIMUM_SIZE = 6
 
 local INFLUENCE_RADIUS = 16
 
+local OBSTACLES_PADDING = 16
+
 local COLORS = {
+--  { 0.0, 0.0, 0.0 },
+  { 0.5, 0.0, 0.0 },
+  { 0.5, 0.5, 0.0 },
+  { 0.5, 0.0, 0.5 },
+  { 0.0, 0.5, 0.0 },
+  { 0.0, 0.5, 0.5 },
+  { 0.0, 0.0, 0.5 },
   { 1.0, 0.0, 0.0 },
   { 0.0, 1.0, 0.0 },
   { 0.0, 0.0, 1.0 },
   { 1.0, 0.0, 1.0 },
   { 1.0, 1.0, 0.0 },
   { 0.0, 1.0, 1.0 },
-  { 1.0, 1.0, 1.0 }
+  { 1.0, 0.5, 0.0 },
+  { 1.0, 0.0, 0.5 },
+  { 1.0, 0.5, 0.5 },
+  { 0.5, 1.0, 0.0 },
+  { 0.0, 1.0, 0.5 },
+  { 0.5, 1.0, 0.5 },
+  { 0.5, 0.0, 1.0 },
+  { 0.0, 0.5, 1.0 },
+  { 0.5, 0.5, 1.0 },
+  { 1.0, 0.5, 1.0 },
+  { 1.0, 1.0, 5.0 },
+  { 0.5, 1.0, 1.0 },
+--  { 1.0, 1.0, 1.0 },
 }
 
 local RULES = {
@@ -32,25 +55,14 @@ local RULES = {
   { rule = Rules.separation, weight = 4 },
   { rule = Rules.stay_visible, weight = 1 },
   { rule = Rules.avoid_obstacle, weight = 5 },
-  -- add perching?
+  -- occasionally, a boid pick a target and hold it for a while
+  -- perching
 }
 
 local _boids = {}
 local _obstacles = {}
 local _radius = INFLUENCE_RADIUS
 local _debug = false
-
-local function lerp(a, b, ratio)
-  if type(a) == 'table' then
-    local v = {}
-    for i = 1, #a do
-      table.insert(v, lerp(a[i], b[i], ratio))
-    end
-    return v
-  else
-    return (b - a) * ratio + a
-  end
-end
 
 local function spawn(boids)
   local x = math.random(0, love.graphics.getWidth() - 1)
@@ -98,9 +110,9 @@ function love.draw()
     local velocity = boid.velocity
     local r, g, b = unpack(boid.color)
 
-    love.graphics.setColor(r, g, b)
-    local speed = velocity:length_squared()
-    local size = ((MAXIMUM_SPEED_SQUARED - speed) / (MAXIMUM_SPEED_SQUARED - MINIMUM_SPEED_SQUARED)) * (MAXIMUM_SIZE - MINIMUM_SIZE) + MINIMUM_SIZE
+    love.graphics.setColor(r, g, b, 1.0)
+    local speed = velocity:magnitude_squared()
+    local size = Math.lerp(MINIMUM_SIZE, MAXIMUM_SIZE, (MAXIMUM_SPEED_SQUARED - speed) / (MAXIMUM_SPEED_SQUARED - MINIMUM_SPEED_SQUARED))
     love.graphics.circle('fill', position.x, position.y, size)
 
     if _debug then
@@ -120,15 +132,16 @@ end
 function love.mousepressed(x, y, button, istouch, presses)
   local point = Vector.new(x, y)
 
-  for index, obstacle in ipairs(_obstacles) do
-    local distance = point:distance(obstacle)
-    if distance < 12 then
-      table.remove(_obstacles, index)
-      return
-    end
-  end
+  local erased = Arrays.erase_if(_obstacles, function(value, index, length, array)
+                                               local distance = point:distance_from(value)
+                                               if distance < OBSTACLES_PADDING then
+                                                 return true
+                                               end
+                                             end)
 
-  _obstacles[#_obstacles + 1] = point
+  if erased == 0 then
+    _obstacles[#_obstacles + 1] = point
+  end
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -140,6 +153,15 @@ function love.keypressed(key, scancode, isrepeat)
     _radius = _radius - 1
   elseif key == 'f4' then
     _radius = _radius + 1
+  elseif key == 'f5' then
+    _obstacles = {}
+  elseif key == 'f6' then
+    local padding = OBSTACLES_PADDING * 2
+    for y = 0, love.graphics.getHeight(), padding do
+      for x = 0, love.graphics.getWidth(), padding do
+        _obstacles[#_obstacles + 1] = Vector.new(x, y)
+      end
+    end
   elseif key == 'f12' then
     _debug = not _debug
   end
@@ -158,7 +180,7 @@ function love.update(dt)
 
   for boid, velocity in pairs(velocities) do
     boid.velocity:add(velocity)
-    local speed_squared = boid.velocity:length_squared()
+    local speed_squared = boid.velocity:magnitude_squared()
     if speed_squared < MINIMUM_SPEED_SQUARED then
       boid.velocity = boid.velocity:normalize(MINIMUM_SPEED)
     elseif speed_squared > MAXIMUM_SPEED_SQUARED then

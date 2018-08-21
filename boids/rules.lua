@@ -1,19 +1,18 @@
-local Vector = require('vector')
+local Arrays = require('lib/collections/arrays')
+local Vector = require('lib/math/vector')
 
 local Rules = {}
 
 function Rules.find_neighbours(self, boids, radius)
   local radius_squared = radius * radius
-  local neighbours = {}
-  for _, boid in ipairs(boids) do
-    if self ~= boid then
-        local distance_squared = self.position:distance_squared(boid.position)
-        if distance_squared <= radius_squared then
-          neighbours[#neighbours + 1] = boid
-        end
-      end
-  end
-  return neighbours
+  return Arrays.filter(boids, function(value, index, length, array)
+                                if self ~= value then
+                                  local distance_squared = self.position:distance_from_squared(value.position)
+                                  if distance_squared <= radius_squared then
+                                    return true
+                                  end
+                                end
+                              end)
 end
 
 function Rules.separation(self, neighbours, params)
@@ -27,7 +26,7 @@ function Rules.separation(self, neighbours, params)
     velocity:add(self.position)
     velocity:sub(boid.position)
   end
-  return velocity:normalize(params.weight)
+  return velocity:normalize_if_not_zero(params.weight)
 end
 
 function Rules.alignment(self, neighbours, params)
@@ -38,7 +37,7 @@ function Rules.alignment(self, neighbours, params)
   for _, boid in ipairs(neighbours) do
     velocity:add(boid.velocity)
   end
-  return velocity:normalize(params.weight)
+  return velocity:normalize_if_not_zero(params.weight)
 end
 
 function Rules.cohesion(self, neighbours, params)
@@ -50,13 +49,13 @@ function Rules.cohesion(self, neighbours, params)
     position:add(boid.position)
   end
   local velocity = position:clone():sub(self.position)
-  return velocity:normalize(params.weight)
+  return velocity:normalize_if_not_zero(params.weight)
 end
 
 function Rules.stay_visible(self, neighbours, params)
   local velocity = Vector.new(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
   velocity:sub(self.position)
-  return velocity:normalize(params.weight)
+  return velocity:normalize_if_not_zero(params.weight)
 end
 
 function Rules.avoid_obstacle(self, neighbours, params)
@@ -65,15 +64,12 @@ function Rules.avoid_obstacle(self, neighbours, params)
     return velocity
   end
   for _, obstacle in ipairs(params.obstacles) do
-    if obstacle:distance(self.position) <= 16 then
+    if obstacle:distance_from(self.position) <= 16 then
       velocity:add(self.position)
       velocity:sub(obstacle)
     end
   end
-  if velocity:is_zero() then
-    return velocity
-  end
-  return velocity:normalize(params.weight)
+  return velocity:normalize_if_not_zero(params.weight)
 end
 
 return Rules

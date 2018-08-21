@@ -1,3 +1,25 @@
+--[[
+
+Copyright (c) 2018 by Marco Lizza (marco.lizza@gmail.com)
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgement in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+]] --
+
 local Vector = {}
 
 Vector.__index = Vector
@@ -15,7 +37,7 @@ function Vector.from_polar(a, l)
 end
 
 function Vector:to_polar()
-  return math.atan2(self.y, self.x), self:length()
+  return math.atan2(self.y, self.x), self:magnitude()
 end
 
 function Vector:unpack()
@@ -116,31 +138,38 @@ function Vector:cross(v)
   return (self.x * v.y) - (self.y * v.x)
 end
 
-function Vector:length_squared()
+function Vector:magnitude_squared()
   return self:dot(self)
 end
 
-function Vector:length()
-  return math.sqrt(self:length_squared())
+function Vector:magnitude()
+  return math.sqrt(self:magnitude_squared())
 end
 
-function Vector:distance_squared(v)
+function Vector:distance_from_squared(v)
   local dx = self.x - v.x
   local dy = self.y - v.y
   return (dx * dx) + (dy * dy)
 end
 
-function Vector:distance(v)
-  return math.sqrt(self:distance_squared(v))
+function Vector:distance_from(v)
+  return math.sqrt(self:distance_from_squared(v))
 end
 
 function Vector:normalize(l)
-  return self:scale((l or 1) / self:length())
+  return self:scale((l or 1) / self:magnitude())
+end
+
+function Vector:normalize_if_not_zero(l)
+  if self:is_zero() then
+    return self
+  end
+  return self:scale((l or 1) / self:magnitude())
 end
 
 -- Normalize to the give `l` length only when greater than it.
 function Vector:trim(l)
-  local s = l * l / self:length_squared()
+  local s = l * l / self:magnitude_squared()
   if s >= 1 then
     return self
   end
