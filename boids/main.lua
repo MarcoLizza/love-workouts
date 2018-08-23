@@ -16,12 +16,14 @@ local INFLUENCE_RADIUS = 16
 local OBSTACLES_PADDING = 16
 
 local RULES = {
-  { rule = Rules.alignment, weight = 6 },
-  { rule = Rules.cohesion, weight = 2 },
-  { rule = Rules.separation, weight = 8 },
-  { rule = Rules.stay_visible, weight = 1 },
+  { rule = Rules.alignment, weight = 3 },
+  { rule = Rules.cohesion, weight = 1 },
+  { rule = Rules.separation, weight = 4 },
+  { rule = Rules.stay_visible, weight = 2 },
+  -- scattering
   -- occasionally, a boid pick a target and hold it for a while
   -- perching
+  -- scanning radius for obstacles should be greater? They are more visible?
 }
 
 local _objects = {}
@@ -123,15 +125,16 @@ end
 function love.update(dt)
   local velocities = {}
   for _, object in ipairs(_objects) do
-    local neighbours = object:neighbours(_objects, _radius) -- obstacles should be static boids?
+    local flockmates = object:find_flockmates(_objects, _radius) -- obstacles should be static boids?
+    object.flockmates = flockmates
     local velocity = Vector.new()
     for _, rule in ipairs(RULES) do
-      velocity:add(rule.rule(object, neighbours, { weight = rule.weight }))
+      velocity:add(rule.rule(object, flockmates, { weight = rule.weight }))
     end
     velocities[object] = velocity
   end
 
   for object, velocity in pairs(velocities) do
-    object:update(velocity, dt)
+    object:update(object.flockmates, velocity, dt)
   end
 end

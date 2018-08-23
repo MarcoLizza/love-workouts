@@ -24,12 +24,13 @@ function Boid.new(position, angle, fov)
     color = Palette[math.random(1, #Palette)],
     position = position,
     velocity = Vector.from_polar(angle, MINIMUM_SPEED),
-    fov = fov }, Boid)
+    fov = fov,
+    flockmates = {} }, Boid)
 end
 
-function Boid:neighbours(boids, radius)
+function Boid:find_flockmates(objects, radius)
   local radius_squared = radius * radius
-  local neighbours = Arrays.filter(boids,
+  local flockmates = Arrays.filter(objects,
     function(value, index, length, array)
       if self ~= value then
         local angle = self.position:angle_to(value.position)
@@ -43,10 +44,10 @@ function Boid:neighbours(boids, radius)
         return true
       end
     end)
-  return neighbours
+  return flockmates
 end
 
-function Boid:update(velocity, dt)
+function Boid:update(flockmates, velocity, dt)
   self.velocity:add(velocity)
   local speed_squared = self.velocity:magnitude_squared()
   if speed_squared < MINIMUM_SPEED_SQUARED then
@@ -55,6 +56,7 @@ function Boid:update(velocity, dt)
     self.velocity = self.velocity:normalize(MAXIMUM_SPEED)
   end
   self.position:add(self.velocity:clone():scale(dt))
+  self.flockmates = flockmates
 end
 
 function Boid:draw(debug, radius)
@@ -69,18 +71,22 @@ function Boid:draw(debug, radius)
 
   if debug then
     local angle, _ = velocity:to_polar()
-    local l = Vector.from_polar(angle - self.fov, radius)
-    local c = Vector.from_polar(angle           , radius)
-    local r = Vector.from_polar(angle + self.fov, radius)
+    local direction = Vector.from_polar(angle, radius)
 
-    love.graphics.setColor(1.0, 1.0, 1.0, 0.25)
-    love.graphics.line(position.x, position.y, position.x + l.x, position.y + l.y)
-    love.graphics.circle('fill', position.x + c.x, position.y + c.y, 2)
+    love.graphics.setColor(0.5, 1.0, 0.5, 0.1)
+    love.graphics.arc('fill', 'pie', position.x, position.y, radius, angle - self.fov, angle + self.fov, 16)
+
+    love.graphics.setColor(1.0, 1.0, 1.0, 0.1)
+    love.graphics.circle('fill', position.x + direction.x, position.y + direction.y, 2)
 --    love.graphics.line(position.x, position.y, position.x + c.x, position.y + c.y)
-    love.graphics.line(position.x, position.y, position.x + r.x, position.y + r.y)
+
+    love.graphics.setColor(1.0, 0.5, 0.5, 0.1)
+    love.graphics.circle('line', position.x, position.y, radius)
 
     love.graphics.setColor(1.0, 1.0, 1.0, 0.25)
-    love.graphics.circle('line', position.x, position.y, radius)
+    for _, object in ipairs(self.flockmates) do
+      love.graphics.line(position.x, position.y, object.position.x, object.position.y)
+    end
   end
 end
 
