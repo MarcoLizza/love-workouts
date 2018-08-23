@@ -164,7 +164,7 @@ function Vector:normalize_if_not_zero(l)
   if self:is_zero() then
     return self
   end
-  return self:scale((l or 1) / self:magnitude())
+  return self:normalize(l)
 end
 
 -- Normalize to the give `l` length only when greater than it.
@@ -174,6 +174,13 @@ function Vector:trim(l)
     return self
   end
   return self:scale(math.sqrt(s))
+end
+
+function Vector:trime_if_not_zero(l)
+  if self:is_zero() then
+    return self
+  end
+  return self:trim(l)
 end
 
 function Vector:angle_to(v)

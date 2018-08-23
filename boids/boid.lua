@@ -50,7 +50,7 @@ end
 function Boid:update(flockmates, velocity, dt)
   self.velocity:add(velocity)
   local speed_squared = self.velocity:magnitude_squared()
-  if speed_squared < MINIMUM_SPEED_SQUARED then
+  if speed_squared > 0.0 and speed_squared < MINIMUM_SPEED_SQUARED then
     self.velocity = self.velocity:normalize(MINIMUM_SPEED)
   elseif speed_squared > MAXIMUM_SPEED_SQUARED then
     self.velocity = self.velocity:normalize(MAXIMUM_SPEED)
