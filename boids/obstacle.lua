@@ -11,7 +11,7 @@ function Obstacle.new(position, angle)
     is_obstacle = true,
     color = { 1.0, 1.0, 1.0 },
     position = position,
-    velocity = Vector.new() }, Obstacle)
+    velocity = Vector.from_polar(angle, 0.0) }, Obstacle)
 end
 
 function Obstacle:neighbours(Obstacles, radius)

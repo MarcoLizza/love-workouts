@@ -28,15 +28,15 @@ local _objects = {}
 local _radius = INFLUENCE_RADIUS
 local _debug = false
 
-local function spawn(boids)
+local function spawn(objects)
   local x = math.random(0, love.graphics.getWidth() - 1)
   local y = math.random(0, love.graphics.getHeight() - 1)
   local angle = math.random() * 2 * math.pi
-  table.insert(boids, Boid.new(Vector.new(x, y), angle))
+  table.insert(objects, Boid.new(Vector.new(x, y), angle, math.pi / 4 * 3))
 end
 
-local function kill(boids)
-  Arrays.erase_if(_objects,
+local function kill(objects)
+  Arrays.erase_if(objects,
     function(value, index, length, array)
       if not value.is_obstacle then
         return true, true -- delete only the first boid we find
