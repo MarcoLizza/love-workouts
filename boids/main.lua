@@ -9,18 +9,20 @@ local Boid = require('boid')
 local Obstacle = require('obstacle')
 local Rules = require('rules')
 
-local BOIDS = 128
+local BOIDS = 4
 
 local INFLUENCE_RADIUS = 16
 
 local OBSTACLES_PADDING = 16
 
+local FOV = math.pi / 4 * 3
+
 local RULES = {
-  { rule = Rules.alignment, weight = 3 },
-  { rule = Rules.cohesion, weight = 1 },
-  { rule = Rules.separation, weight = 2 },
-  { rule = Rules.follow, weight = 4 },
-  { rule = Rules.stay_visible, weight = 0.5 },
+  { rule = Rules.alignment, fov = FOV, radius = INFLUENCE_RADIUS * 2, weight = 3 },
+  { rule = Rules.cohesion, fov = FOV, radius = INFLUENCE_RADIUS * 3, weight = 1 },
+  { rule = Rules.separation, fov = FOV, radius = INFLUENCE_RADIUS * 1, weight = 2 },
+  { rule = Rules.follow, fov = FOV, radius = INFLUENCE_RADIUS, weight = 4 },
+  { rule = Rules.stay_visible, fov = FOV, radius = INFLUENCE_RADIUS, weight = 0.5 },
   -- scattering
   -- occasionally, a boid pick a target and hold it for a while
   -- perching
@@ -28,14 +30,13 @@ local RULES = {
 }
 
 local _objects = {}
-local _radius = INFLUENCE_RADIUS
 local _debug = false
 
 local function spawn(objects)
   local x = math.random(0, love.graphics.getWidth() - 1)
   local y = math.random(0, love.graphics.getHeight() - 1)
   local angle = math.random() * 2 * math.pi
-  table.insert(objects, Boid.new(Vector.new(x, y), angle, math.pi / 4 * 3))
+  table.insert(objects, Boid.new(Vector.new(x, y), angle))
 end
 
 local function kill(objects)
@@ -66,14 +67,35 @@ function love.load(args)
   end
 end
 
+function love.update(dt)
+  local ranges = {}
+  local velocities = {}
+  for _, object in ipairs(_objects) do
+    local flockmates = {}
+    local velocity = Vector.new()
+    for _, rule in ipairs(RULES) do
+      velocity:add(rule.rule(object, _objects, { flockmates = flockmates, fov = rule.fov, radius = rule.radius, weight = rule.weight }))
+      ranges[#ranges + 1] = { fov = rule.fov, radius = rule.radius }
+    end
+    Arrays.unique(flockmates) -- remove duplicates from `flockmates`.
+    object.flockmates = flockmates
+    object.ranges = ranges
+    velocities[object] = velocity
+  end
+
+  for object, velocity in pairs(velocities) do
+    object:update(object.flockmates, velocity, dt)
+  end
+end
+
 function love.draw()
   for _, object in ipairs(_objects) do
-    object:draw(_debug, _radius)
+    object:draw(_debug, object.ranges)
   end
 
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
-  love.graphics.print(string.format('%d objects(s) w/ radius %d', #_objects, _radius), 0, 16)
+  love.graphics.print(string.format('%d objects(s)', #_objects), 0, 16)
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
@@ -100,10 +122,6 @@ function love.keypressed(key, scancode, isrepeat)
     kill(_objects)
   elseif key == 'f2' then
     spawn(_objects)
-  elseif key == 'f3' then
-    _radius = _radius - 1
-  elseif key == 'f4' then
-    _radius = _radius + 1
   elseif key == 'f5' then
     Arrays.erase_if(_objects,
       function(value, index, length, array)
@@ -120,22 +138,5 @@ function love.keypressed(key, scancode, isrepeat)
     end
   elseif key == 'f12' then
     _debug = not _debug
-  end
-end
-
-function love.update(dt)
-  local velocities = {}
-  for _, object in ipairs(_objects) do
-    local flockmates = object:find_flockmates(_objects, _radius) -- obstacles should be static boids?
-    object.flockmates = flockmates
-    local velocity = Vector.new()
-    for _, rule in ipairs(RULES) do
-      velocity:add(rule.rule(object, flockmates, { weight = rule.weight }))
-    end
-    velocities[object] = velocity
-  end
-
-  for object, velocity in pairs(velocities) do
-    object:update(object.flockmates, velocity, dt)
   end
 end

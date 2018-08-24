@@ -14,8 +14,8 @@ function Obstacle.new(position, angle)
     velocity = Vector.from_polar(angle, 0.0) }, Obstacle)
 end
 
-function Obstacle:find_flockmates(objects, radius)
-  return {}
+function Obstacle:is_nearby(boid, radius)
+  return false
 end
 
 function Obstacle:update(velocity, dt)

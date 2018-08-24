@@ -239,6 +239,10 @@ local function shuffle(array)
   end
 end
 
+local function unique(array)
+  return array
+end
+
 local function new(length, value)
   local result = {}
   for index = 1, length do
@@ -315,6 +319,7 @@ return {
   rotate = rotate,
   shuffled = shuffled,
   shuffle = shuffle,
+  unique = unique,
   new = new,
   equals = equals,
   copy = copy,

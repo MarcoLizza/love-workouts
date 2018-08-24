@@ -5,11 +5,14 @@ local Rules = {}
 function Rules.separation(self, objects, params)
   local velocity = Vector.new()
   for _, object in ipairs(objects) do
-    -- TODO: should the "pulse" vector be proportial to the proximity? Nearer is stronger?
---    local distance = self.position:clone():sub(boid.position)
---    velocity:add(distance)
-    velocity:add(self.position)
-    velocity:sub(object.position)
+    if self:is_nearby(object, params.fov, params.radius) then
+      params.flockmates[#params.flockmates + 1] = object
+      -- TODO: should the "pulse" vector be proportial to the proximity? Nearer is stronger?
+--      local distance = self.position:clone():sub(boid.position)
+--      velocity:add(distance)
+      velocity:add(self.position)
+      velocity:sub(object.position)
+    end
   end
   return velocity:normalize_if_not_zero(params.weight)
 end
@@ -17,7 +20,10 @@ end
 function Rules.alignment(self, objects, params)
   local velocity = Vector.new()
   for _, object in ipairs(objects) do
-    velocity:add(object.velocity)
+    if self:is_nearby(object, params.fov, params.radius) then
+      params.flockmates[#params.flockmates + 1] = object
+      velocity:add(object.velocity)
+    end
   end
   return velocity:normalize_if_not_zero(params.weight)
 end
@@ -28,7 +34,8 @@ function Rules.cohesion(self, objects, params)
   -- the number of vectors)
   local count = 0
   for _, object in ipairs(objects) do
-    if not object.is_obstacle then
+    if self:is_nearby(object, params.fov, params.radius) and not object.is_obstacle then
+      params.flockmates[#params.flockmates + 1] = object
       velocity:add(object.position)
       count = count + 1
     end
