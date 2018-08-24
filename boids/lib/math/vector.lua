@@ -32,8 +32,8 @@ function Vector:clone()
   return Vector.new(self.x, self.y)
 end
 
-function Vector.from_polar(a, l)
-  return Vector.new(math.cos(a) * l, math.sin(a) * l)
+function Vector.from_polar(a, l, ox, oy)
+  return Vector.new(math.cos(a) * l + (ox and ox or 0), math.sin(a) * l + (oy and oy or 0))
 end
 
 function Vector:to_polar()

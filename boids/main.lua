@@ -18,8 +18,9 @@ local OBSTACLES_PADDING = 16
 local RULES = {
   { rule = Rules.alignment, weight = 3 },
   { rule = Rules.cohesion, weight = 1 },
-  { rule = Rules.separation, weight = 4 },
-  { rule = Rules.stay_visible, weight = 2 },
+  { rule = Rules.separation, weight = 2 },
+  { rule = Rules.follow, weight = 4 },
+  { rule = Rules.stay_visible, weight = 0.5 },
   -- scattering
   -- occasionally, a boid pick a target and hold it for a while
   -- perching

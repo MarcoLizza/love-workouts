@@ -5,6 +5,7 @@ local Rules = {}
 function Rules.separation(self, objects, params)
   local velocity = Vector.new()
   for _, object in ipairs(objects) do
+    -- TODO: should the "pulse" vector be proportial to the proximity? Nearer is stronger?
 --    local distance = self.position:clone():sub(boid.position)
 --    velocity:add(distance)
     velocity:add(self.position)
@@ -35,6 +36,14 @@ function Rules.cohesion(self, objects, params)
   if count > 0 then
     -- Find the center-of-mass and convert to a "direction" vector.
     velocity:scale(1 / count):sub(self.position)
+  end
+  return velocity:normalize_if_not_zero(params.weight)
+end
+
+function Rules.follow(self, objects, params)
+  local velocity = Vector.new()
+  if self.aim then
+    velocity = self.aim:clone():sub(self.position)
   end
   return velocity:normalize_if_not_zero(params.weight)
 end
