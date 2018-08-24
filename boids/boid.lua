@@ -7,7 +7,7 @@ Boid.__index = Boid
 
 local FOV = math.pi / 4 * 3
 
-local OBSTACLE_RANGE_MULTIPLIER = 16
+local OBSTACLE_RANGE_MULTIPLIER = 8
 
 local MINIMUM_SPEED = 8
 local MAXIMUM_SPEED = 128

@@ -46,7 +46,7 @@ end
 
 function Rules.follow(self, flockmates, params)
   local velocity = Vector.new()
-  if self.aim.position then
+  if self.aim and self.aim.position then
     velocity = self.aim.position:clone():sub(self.position)
   end
   return velocity:normalize_if_not_zero(params.weight)
