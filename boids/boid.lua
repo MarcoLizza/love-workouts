@@ -8,6 +8,8 @@ local Boid = {}
 
 Boid.__index = Boid
 
+local OBSTACLE_RANGE_MULTIPLIER = 16
+
 local MINIMUM_SPEED = 8
 local MAXIMUM_SPEED = 192
 
@@ -37,8 +39,12 @@ function Boid:find_flockmates(objects, radius)
         if math.abs(angle) > self.fov then
           return false
         end
+
+        -- If the checked object is an obstacle, we detect if far more earlier.
+        local range = value.is_obstacle and (radius_squared * OBSTACLE_RANGE_MULTIPLIER) or radius_squared
+
         local distance_squared = self.position:distance_from_squared(value.position)
-        if distance_squared > radius_squared then
+        if distance_squared > range then
           return false
         end
         return true
