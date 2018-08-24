@@ -10,19 +10,15 @@ local Obstacle = require('obstacle')
 local Rules = require('rules')
 
 local BOIDS = 4
-
-local INFLUENCE_RADIUS = 16
-
 local OBSTACLES_PADDING = 16
-
+local INFLUENCE_RADIUS = 32
 local FOV = math.pi / 4 * 3
 
 local RULES = {
-  { rule = Rules.alignment, fov = FOV, radius = INFLUENCE_RADIUS * 2, weight = 3 },
-  { rule = Rules.cohesion, fov = FOV, radius = INFLUENCE_RADIUS * 3, weight = 1 },
-  { rule = Rules.separation, fov = FOV, radius = INFLUENCE_RADIUS * 1, weight = 2 },
-  { rule = Rules.follow, fov = FOV, radius = INFLUENCE_RADIUS, weight = 4 },
-  { rule = Rules.stay_visible, fov = FOV, radius = INFLUENCE_RADIUS, weight = 0.5 },
+  { rule = Rules.alignment, weight = 4 },
+  { rule = Rules.cohesion, weight =  2 },
+  { rule = Rules.separation, weight = 3 },
+  { rule = Rules.follow, weight = 1 },
   -- scattering
   -- occasionally, a boid pick a target and hold it for a while
   -- perching
@@ -36,7 +32,7 @@ local function spawn(objects)
   local x = math.random(0, love.graphics.getWidth() - 1)
   local y = math.random(0, love.graphics.getHeight() - 1)
   local angle = math.random() * 2 * math.pi
-  table.insert(objects, Boid.new(Vector.new(x, y), angle))
+  table.insert(objects, Boid.new(Vector.new(x, y), angle, FOV, INFLUENCE_RADIUS))
 end
 
 local function kill(objects)
@@ -67,30 +63,41 @@ function love.load(args)
   end
 end
 
+local _flockmates = {}
+
 function love.update(dt)
-  local ranges = {}
+  _flockmates = {}
+
   local velocities = {}
   for _, object in ipairs(_objects) do
-    local flockmates = {}
+    local flockmates = object:find_flockmates(_objects)
+
     local velocity = Vector.new()
     for _, rule in ipairs(RULES) do
-      velocity:add(rule.rule(object, _objects, { flockmates = flockmates, fov = rule.fov, radius = rule.radius, weight = rule.weight }))
-      ranges[#ranges + 1] = { fov = rule.fov, radius = rule.radius }
+      velocity:add(rule.rule(object, flockmates, { weight = rule.weight }))
     end
-    Arrays.unique(flockmates) -- remove duplicates from `flockmates`.
-    object.flockmates = flockmates
-    object.ranges = ranges
     velocities[object] = velocity
+
+    _flockmates[object] = flockmates
   end
 
   for object, velocity in pairs(velocities) do
-    object:update(object.flockmates, velocity, dt)
+    object:update(velocity, dt)
   end
 end
 
 function love.draw()
   for _, object in ipairs(_objects) do
-    object:draw(_debug, object.ranges)
+    object:draw(_debug)
+  end
+
+  if _debug then
+    for object, flockmates in pairs(_flockmates) do
+      for _, flockmate in ipairs(flockmates) do
+        love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+        love.graphics.line(object.position.x, object.position.y, flockmate.position.x, flockmate.position.y)
+      end
+    end
   end
 
   love.graphics.setColor(1.0, 1.0, 1.0)

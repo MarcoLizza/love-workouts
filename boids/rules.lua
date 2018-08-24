@@ -2,11 +2,10 @@ local Vector = require('lib/math/vector')
 
 local Rules = {}
 
-function Rules.separation(self, objects, params)
+function Rules.separation(self, flockmates, params)
   local velocity = Vector.new()
-  for _, object in ipairs(objects) do
-    if self:is_nearby(object, params.fov, params.radius) then
-      params.flockmates[#params.flockmates + 1] = object
+  for _, object in ipairs(flockmates) do
+    if self:is_nearby(object) then
       -- TODO: should the "pulse" vector be proportial to the proximity? Nearer is stronger?
 --      local distance = self.position:clone():sub(boid.position)
 --      velocity:add(distance)
@@ -17,25 +16,23 @@ function Rules.separation(self, objects, params)
   return velocity:normalize_if_not_zero(params.weight)
 end
 
-function Rules.alignment(self, objects, params)
+function Rules.alignment(self, flockmates, params)
   local velocity = Vector.new()
-  for _, object in ipairs(objects) do
-    if self:is_nearby(object, params.fov, params.radius) then
-      params.flockmates[#params.flockmates + 1] = object
+  for _, object in ipairs(flockmates) do
+    if not object.is_obstacle and self:is_nearby(object) then
       velocity:add(object.velocity)
     end
   end
   return velocity:normalize_if_not_zero(params.weight)
 end
 
-function Rules.cohesion(self, objects, params)
+function Rules.cohesion(self, flockmates, params)
   local velocity = Vector.new()
-  -- Compute the centroid of the objects (sum of the position divided by
+  -- Compute the centroid of the flockmates (sum of the position divided by
   -- the number of vectors)
   local count = 0
-  for _, object in ipairs(objects) do
-    if self:is_nearby(object, params.fov, params.radius) and not object.is_obstacle then
-      params.flockmates[#params.flockmates + 1] = object
+  for _, object in ipairs(flockmates) do
+    if not object.is_obstacle and self:is_nearby(object) then
       velocity:add(object.position)
       count = count + 1
     end
@@ -47,17 +44,11 @@ function Rules.cohesion(self, objects, params)
   return velocity:normalize_if_not_zero(params.weight)
 end
 
-function Rules.follow(self, objects, params)
+function Rules.follow(self, flockmates, params)
   local velocity = Vector.new()
   if self.aim then
     velocity = self.aim:clone():sub(self.position)
   end
-  return velocity:normalize_if_not_zero(params.weight)
-end
-
-function Rules.stay_visible(self, objects, params)
-  local velocity = Vector.new(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
-  velocity:sub(self.position)
   return velocity:normalize_if_not_zero(params.weight)
 end
 

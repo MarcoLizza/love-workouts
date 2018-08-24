@@ -240,6 +240,7 @@ local function shuffle(array)
 end
 
 local function unique(array)
+  -- TODO: implement a duplicate removal.
   return array
 end
 
