@@ -24,8 +24,8 @@ function Boid.new(position, angle, fov, radius)
     radius = radius,
     position = position,
     velocity = Vector.from_polar(angle, MINIMUM_SPEED),
-    aim = nil,
-    aim_timer = 0 }, Boid)
+    aim = { position = nil, timer = 0, reference = 0 },
+    radius_squared = radius * radius}, Boid)
 end
 
 function Boid:find_flockmates(objects)
@@ -48,10 +48,9 @@ function Boid:is_nearby(object)
     return false
   end
 
-  local radius_squared = self.radius * self.radius
   local distance_squared = self.position:distance_from_squared(object.position)
   -- If the checked object is an obstacle, we detect if far more earlier.
-  local range = object.is_obstacle and (radius_squared * OBSTACLE_RANGE_MULTIPLIER) or radius_squared
+  local range = object.is_obstacle and (self.radius_squared * OBSTACLE_RANGE_MULTIPLIER) or self.radius_squared
   if distance_squared > range then
     return false
   end
@@ -69,28 +68,28 @@ function Boid:update(velocity, dt)
   end
   self.position:add(self.velocity:clone():scale(dt))
 
-  self.aim_timer = self.aim_timer - dt
+  self.aim.timer = self.aim.timer - dt
 
-  local elapsed = self.aim_timer <= 0
-  local reached = self.aim and self.position:distance_from_squared(self.aim) < 64
-  local retarget = not self.aim and (self.position.x < 0 or
+  local elapsed = self.aim.timer <= 0
+  local reached = self.aim.position and self.position:distance_from_squared(self.aim.position) <= self.radius_squared
+  local retarget = not self.aim.position and (self.position.x < 0 or
     self.position.x >= love.graphics.getWidth() or
     self.position.y < 0 or
     self.position.y >= love.graphics.getHeight())
 
   if elapsed or reached or retarget then
-    if self.aim and not retarget then
-      self.aim = nil
+    if self.aim.position and not retarget then
+      self.aim.position = nil
     else
       local set_aim = math.random() <= (retarget and 1.0 or 0.333)
       if set_aim then
         local x = math.random(32, love.graphics.getWidth() - 33)
         local y = math.random(32, love.graphics.getHeight() - 33)
-        self.aim = Vector.new(x, y)
+        self.aim.position = Vector.new(x, y)
       end
     end
-    self.aim_reference = math.random(5, 15)
-    self.aim_timer = self.aim_reference
+    self.aim.reference = math.random(5, 15)
+    self.aim.timer = self.aim.reference
   end
 end
 
@@ -114,11 +113,11 @@ function Boid:draw(debug)
     love.graphics.setColor(1.0, 0.5, 0.5, 0.1)
     love.graphics.circle('line', position.x, position.y, self.radius)
 
-    if self.aim then
-      local alpha = self.aim_timer / self.aim_reference
+    if self.aim.position then
+      local alpha = self.aim.timer / self.aim.reference
       love.graphics.setColor(r, g, b, alpha * 0.5)
-      love.graphics.line(position.x, position.y, self.aim.x, self.aim.y)
-      love.graphics.circle('fill', self.aim.x, self.aim.y, 3)
+      love.graphics.line(position.x, position.y, self.aim.position.x, self.aim.position.y)
+      love.graphics.circle('fill', self.aim.position.x, self.aim.position.y, 3)
     end
   end
 end

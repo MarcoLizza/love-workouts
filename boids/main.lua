@@ -1,4 +1,14 @@
--- http://www.kfish.org/boids/pseudocode.html
+--[[
+http://www.kfish.org/boids/pseudocode.html
+https://gamedevelopment.tutsplus.com/tutorials/3-simple-rules-of-flocking-behaviors-alignment-cohesion-and-separation--gamedev-3444
+http://www.red3d.com/cwr/boids/
+https://github.com/iamwilhelm/frock/blob/master/boid.lua
+https://en.wikipedia.org/wiki/Exterior_algebra
+https://en.wikipedia.org/wiki/Vector_projection
+https://math.stackexchange.com/questions/2239169/reflecting-a-vector-over-another-line
+https://www.youtube.com/watch?v=QbUPfMXXQIY
+https://github.com/jackaperkins/boids/blob/master/Boid.pde
+]]--
 
 -- Could this become a game? Underwater chasing?
 
@@ -9,7 +19,7 @@ local Boid = require('boid')
 local Obstacle = require('obstacle')
 local Rules = require('rules')
 
-local BOIDS = 4
+local BOIDS = 16
 local OBSTACLES_PADDING = 16
 local INFLUENCE_RADIUS = 32
 local FOV = math.pi / 4 * 3
@@ -20,9 +30,7 @@ local RULES = {
   { rule = Rules.separation, weight = 3 },
   { rule = Rules.follow, weight = 1 },
   -- scattering
-  -- occasionally, a boid pick a target and hold it for a while
   -- perching
-  -- scanning radius for obstacles should be greater? They are more visible?
 }
 
 local _objects = {}
@@ -94,7 +102,7 @@ function love.draw()
   if _debug then
     for object, flockmates in pairs(_flockmates) do
       for _, flockmate in ipairs(flockmates) do
-        love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+        love.graphics.setColor(1.0, 1.0, 1.0, 0.25)
         love.graphics.line(object.position.x, object.position.y, flockmate.position.x, flockmate.position.y)
       end
     end
