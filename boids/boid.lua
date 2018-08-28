@@ -6,6 +6,7 @@ local Boid = {}
 Boid.__index = Boid
 
 local FOV = math.pi / 4 * 3
+local SIZE = 8
 
 local OBSTACLE_RANGE_MULTIPLIER = 8
 
@@ -94,30 +95,30 @@ function Boid:update(velocity, dt)
 end
 
 function Boid:draw(debug)
-  local position = self.position
-  local velocity = self.velocity
+  local angle, _ = self.velocity:to_polar()
+  local x, y = self.position:unpack()
+
+  local tip = Vector.from_polar(angle, SIZE, x, y)
+  local left_tail = Vector.from_polar(angle - FOV, SIZE, x, y)
+  local right_tail = Vector.from_polar(angle + FOV, SIZE, x, y)
+
   local r, g, b = unpack(self.color)
-  local angle, _ = velocity:to_polar()
-
-  local tip = Vector.from_polar(angle, 6, position:unpack())
-  local left_tail = Vector.from_polar(angle - FOV, 6, position:unpack())
-  local right_tail = Vector.from_polar(angle + FOV, 6, position:unpack())
-
   love.graphics.setColor(r, g, b, 1.0)
   love.graphics.polygon('fill', tip.x, tip.y, right_tail.x, right_tail.y, left_tail.x, left_tail.y)
 
   if debug then
     love.graphics.setColor(0.5, 1.0, 0.5, 0.1)
-    love.graphics.arc('fill', 'pie', position.x, position.y, self.radius, angle - self.fov, angle + self.fov, 16)
+    love.graphics.arc('fill', 'pie', x, y, self.radius, angle - self.fov, angle + self.fov, 16)
 
     love.graphics.setColor(1.0, 0.5, 0.5, 0.1)
-    love.graphics.circle('line', position.x, position.y, self.radius)
+    love.graphics.circle('line', x, y, self.radius)
 
     if self.aim.position then
+      local ax, ay = self.aim.position:unpack()
       local alpha = self.aim.timer / self.aim.reference
       love.graphics.setColor(r, g, b, alpha * 0.5)
-      love.graphics.line(position.x, position.y, self.aim.position.x, self.aim.position.y)
-      love.graphics.circle('fill', self.aim.position.x, self.aim.position.y, 3)
+      love.graphics.line(x, y, ax, ay)
+      love.graphics.circle('fill', ax, ay, 3)
     end
   end
 end

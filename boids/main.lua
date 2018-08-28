@@ -19,9 +19,9 @@ local Boid = require('boid')
 local Obstacle = require('obstacle')
 local Rules = require('rules')
 
-local BOIDS = 16
+local BOIDS = 32
 local OBSTACLES_PADDING = 16
-local INFLUENCE_RADIUS = 32
+local INFLUENCE_RADIUS = 48
 local FOV = math.pi / 4 * 3
 
 local RULES = {
@@ -53,10 +53,7 @@ local function kill(objects)
 end
 
 function love.load(args)
-  if args[#args] == '-debug' then require('mobdebug').start() end
-
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
-  love.graphics.setBlendMode('add')
 
   love.mouse.setVisible(true)
   love.mouse.setGrabbed(false)
