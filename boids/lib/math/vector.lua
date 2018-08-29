@@ -40,6 +40,41 @@ function Vector:to_polar()
   return math.atan2(self.y, self.x), self:magnitude()
 end
 
+-- The pairs `{ p0, d0 }` and `{ p1, d1 }` represent the two rays we are going to
+-- check for intersection.
+--
+-- Returns the point of intersection as `u` and `v` ratios for the rays (or
+-- `nil` if no intersection is detected).
+--
+-- https://www.gamedev.net/forums/topic/647810-intersection-point-of-two-vectors/
+-- http://www.tonypa.pri.ee/vectors/tut05.html
+function Vector.intersect(p0, d0, p1, d1)
+  local det = d0:cross(d1)
+  if det == 0.0 then
+--    if p0:is_equal(p1) and d0:is_equal(d1) then
+--      return 0, 0
+--    else
+      return nil
+--    end
+  end
+  local c = p1:clone():sub(p0)
+  local u = c:cross(d0) / det
+  if u < 0 then
+    return nil
+  end
+  local v = c:cross(d1) / det
+  if v < 0 then
+    return nil
+  end
+--  local x0 = d0:clone():scale(u):add(p0)
+--  local x1 = d1:clone():scale(v):add(p1)
+--  if not x0:is_equal(x1) then
+--    return nil
+--  end
+--  return x0, u, v
+  return u, v
+end
+
 function Vector:unpack()
   return self.x, self.y
 end
@@ -130,10 +165,14 @@ end
 -- that if NEGATIVE the second vector is CLOCKWISE from the first one, if
 -- POSITIVE the second vector is COUNTER-CLOCKWISE from the first one.
 --
+-- It is also called "perp-dot", that is the dot product of the perpendicular
+-- vector with another vector (i.e. `a:perpendicular():dot(b)`)
+--
 -- NOTE: when on a 2D display, since the `y` component inverts it sign, also
 --       the rule inverts! That is if NEGATIVE then is COUNTER-CLOCKWISE.
 --
 -- https://en.wikipedia.org/wiki/Exterior_algebra
+-- http://geomalgorithms.com/vector_products.html#2D-Perp-Product
 function Vector:cross(v)
   return (self.x * v.y) - (self.y * v.x)
 end
