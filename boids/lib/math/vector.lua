@@ -40,39 +40,25 @@ function Vector:to_polar()
   return math.atan2(self.y, self.x), self:magnitude()
 end
 
--- The pairs `{ p0, d0 }` and `{ p1, d1 }` represent the two rays we are going to
+-- The pairs `{ p0, v0 }` and `{ p1, v1 }` represent the two rays we are going to
 -- check for intersection.
 --
--- Returns the point of intersection as `u` and `v` ratios for the rays (or
--- `nil` if no intersection is detected).
+-- Returns the point of intersection as ratios for the rays (or
+-- `nil` if no intersection is detected). If the ratio is negative, then the
+-- intersection happened in the "past". If between `0` and `1` it occurs within
+-- the velocity vector span. It greater than `1` it will happen in the "future".
 --
 -- https://www.gamedev.net/forums/topic/647810-intersection-point-of-two-vectors/
 -- http://www.tonypa.pri.ee/vectors/tut05.html
-function Vector.intersect(p0, d0, p1, d1)
-  local det = d0:cross(d1)
+function Vector.intersect(p0, v0, p1, v1)
+  local det = v0:perp_dot(v1)
   if det == 0.0 then
---    if p0:is_equal(p1) and d0:is_equal(d1) then
---      return 0, 0
---    else
-      return nil
---    end
+    return nil, nil
   end
-  local c = p1:clone():sub(p0)
-  local u = c:cross(d0) / det
-  if u < 0 then
-    return nil
-  end
-  local v = c:cross(d1) / det
-  if v < 0 then
-    return nil
-  end
---  local x0 = d0:clone():scale(u):add(p0)
---  local x1 = d1:clone():scale(v):add(p1)
---  if not x0:is_equal(x1) then
---    return nil
---  end
---  return x0, u, v
-  return u, v
+  local v3 = p1:clone():sub(p0)
+  local t0 = v3:perp_dot(v1) / det -- ratio for the first ray
+  local t1 = v3:perp_dot(v0) / det -- ratio for the second ray
+  return t0, t1
 end
 
 function Vector:unpack()
@@ -126,7 +112,7 @@ function Vector:negate()
   return self
 end
 
--- COUNTER-CLOCKWISE perpendicular vector.
+-- COUNTER-CLOCKWISE perpendicular vector (`perp` operator).
 function Vector:perpendiculal()
   self.x, self.y = -self.y, self.x
   return self
@@ -173,7 +159,7 @@ end
 --
 -- https://en.wikipedia.org/wiki/Exterior_algebra
 -- http://geomalgorithms.com/vector_products.html#2D-Perp-Product
-function Vector:cross(v)
+function Vector:perp_dot(v)
   return (self.x * v.y) - (self.y * v.x)
 end
 
@@ -215,7 +201,7 @@ function Vector:trim(l)
   return self:scale(math.sqrt(s))
 end
 
-function Vector:trime_if_not_zero(l)
+function Vector:trim_if_not_zero(l)
   if self:is_zero() then
     return self
   end
