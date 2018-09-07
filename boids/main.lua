@@ -58,7 +58,7 @@ function love.load(args)
   love.mouse.setVisible(true)
   love.mouse.setGrabbed(false)
 
-  if love.filesystem.getInfo("assets/mappings/gamecontrollerdb.txt") then
+  if love.joystick and love.filesystem.getInfo("assets/mappings/gamecontrollerdb.txt") then
     love.joystick.loadGamepadMappings("assets/mappings/gamecontrollerdb.txt")
   end
 
