@@ -58,6 +58,10 @@ function love.load(args)
   love.mouse.setVisible(true)
   love.mouse.setGrabbed(false)
 
+  if love.filesystem.getInfo("assets/mappings/gamecontrollerdb.txt") then
+    love.joystick.loadGamepadMappings("assets/mappings/gamecontrollerdb.txt")
+  end
+
   math.randomseed(os.time())
   for _ = 1, 1000 do
     math.random()
