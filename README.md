@@ -8,3 +8,4 @@ This is a collection of very simple [LÖVE](https://love2d.org) projects develop
 * Boids
 * *Boot-logo (TBD)*
 * *Analogue controls (TBD)*
+* *Rain effect (TBD)*
