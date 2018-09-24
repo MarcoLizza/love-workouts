@@ -41,7 +41,7 @@ function love.load(args)
     math.random()
   end
 
-  _messages[#_messages + 1] = Message.new('HEXAPOD', { family = 'assets/ttf/m6x11.ttf', size = 64 })
+  _messages[#_messages + 1] = Message.new('Strool Games', { family = 'assets/fonts/m6x11.ttf', size = 64 })
 end
 
 function love.update(dt)

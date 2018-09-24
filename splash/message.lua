@@ -28,27 +28,30 @@ Message.__index = Message
 
 function Message.new(text, font)
   return setmetatable({
-      x = 100,
-      y = 100,
       text = text,
       font = love.graphics.newFont(font.family, font.size),
-      easing = Easings.outBounce,
+      easing = Easings.outExpo,
       time = 0,
-      duration = 1
+      duration = 2.5,
+      x = nil,
+      y = nil
     }, Message)
 end
 
 function Message:update(dt)
   self.time = self.time + dt
+  local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
+  self.x = (love.graphics.getWidth() - w) / 2
+  local value = math.abs(math.cos(self.time * 4.0)) * (love.graphics.getHeight() / 2)
+  local dampening = (self.time >= self.duration) and 0.0 or (1.0 - (self.time / self.duration))
+  self.y = (love.graphics.getHeight() / 2) - (h / 2) - value * dampening
+  -- self.y = self.easing(self.time, 0, love.graphics.getHeight() / 2, self.duration) - (h / 2)
 end
 
 function Message:draw()
-  local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
-  local x, y = self.x, self.y
-  y = y - (h / 2) + self.easing(self.time, 0, 128, self.duration)
   love.graphics.push('all')
     love.graphics.setFont(self.font)
-    love.graphics.print(self.text, x, y)
+    love.graphics.print(self.text, self.x, self.y)
   love.graphics.pop()
 end
 
