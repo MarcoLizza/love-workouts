@@ -26,32 +26,40 @@ local Message = {}
 
 Message.__index = Message
 
-function Message.new(text, font)
+function Message.new(text, font, origin, destination, easing, duration)
   return setmetatable({
       text = text,
       font = love.graphics.newFont(font.family, font.size),
-      easing = Easings.outExpo,
+      origin = origin,
+      destination = destination,
+      easing = Easings[easing or 'outExpo'],
+      duration = duration or 5,
+      direction = destination:clone():sub(origin),
       time = 0,
-      duration = 2.5,
-      x = nil,
-      y = nil
+      position = nil
     }, Message)
 end
 
 function Message:update(dt)
   self.time = self.time + dt
-  local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
-  self.x = (love.graphics.getWidth() - w) / 2
-  local value = math.abs(math.cos(self.time * 4.0)) * (love.graphics.getHeight() / 2)
-  local dampening = (self.time >= self.duration) and 0.0 or (1.0 - (self.time / self.duration))
-  self.y = (love.graphics.getHeight() / 2) - (h / 2) - value * dampening
+
+  local ratio = self.time >= self.duration and 1.0 or self.easing(self.time, 0, 1, self.duration)
+
+  self.position = self.direction:clone():scale(ratio):add(self.origin)
+
+--  self.x = (love.graphics.getWidth() - w) / 2
+--  local value = math.abs(math.cos(self.time * 4.0)) * (love.graphics.getHeight() / 2)
+--  local dampening = (self.time >= self.duration) and 0.0 or (1.0 - (self.time / self.duration))
+--  self.y = (love.graphics.getHeight() / 2) - (h / 2) - value * dampening
   -- self.y = self.easing(self.time, 0, love.graphics.getHeight() / 2, self.duration) - (h / 2)
 end
 
 function Message:draw()
+  local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
+
   love.graphics.push('all')
     love.graphics.setFont(self.font)
-    love.graphics.print(self.text, self.x, self.y)
+    love.graphics.print(self.text, self.position.x - w / 2, self.position.y - h / 2)
   love.graphics.pop()
 end
 

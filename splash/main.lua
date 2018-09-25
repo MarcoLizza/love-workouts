@@ -37,11 +37,12 @@ function love.load(args)
   end
 
   math.randomseed(os.time())
-  for _ = 1, 1000 do
+  for _ = 1, 1024 do
     math.random()
   end
 
-  _messages[#_messages + 1] = Message.new('Strool Games', { family = 'assets/fonts/m6x11.ttf', size = 64 })
+  _messages[#_messages + 1] = Message.new('PICO-MOO', { family = 'assets/fonts/m6x11.ttf', size = 64 }, Vector.new(256, 0), Vector.new(256, 224), 'outBounce', 2.5)
+  _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m6x11.ttf', size = 16 }, Vector.new(256, 512), Vector.new(256, 264), 'outExpo', 2.5)
 end
 
 function love.update(dt)
