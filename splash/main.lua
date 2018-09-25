@@ -20,6 +20,9 @@ freely, subject to the following restrictions:
 
 ]] --
 
+-- TODO: define a path of movement (origin, destination, easing, duration)
+-- TODO: apply shader or color
+
 local Vector = require('lib/math/vector')
 local Message = require('message')
 
@@ -41,8 +44,8 @@ function love.load(args)
     math.random()
   end
 
-  _messages[#_messages + 1] = Message.new('PICO-MOO', { family = 'assets/fonts/m6x11.ttf', size = 64 }, Vector.new(256, 0), Vector.new(256, 224), 'outBounce', 2.5)
-  _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m6x11.ttf', size = 16 }, Vector.new(256, 512), Vector.new(256, 264), 'outExpo', 2.5)
+  _messages[#_messages + 1] = Message.new('TOFUCKEN', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 }, Vector.new(256, 0), Vector.new(256, 224), 'outBounce', 2.5)
+  _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, Vector.new(256, 512), Vector.new(256, 270), 'outExpo', 2.5)
 end
 
 function love.update(dt)
@@ -55,6 +58,8 @@ function love.draw()
   for _, message in ipairs(_messages) do
     message:draw()
   end
+
+--  love.graphics.line(0, 256, 512, 256)
 
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)

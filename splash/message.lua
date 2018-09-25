@@ -26,10 +26,11 @@ local Message = {}
 
 Message.__index = Message
 
-function Message.new(text, font, origin, destination, easing, duration)
+function Message.new(text, font, color, origin, destination, easing, duration)
   return setmetatable({
       text = text,
       font = love.graphics.newFont(font.family, font.size),
+      color = color,
       origin = origin,
       destination = destination,
       easing = Easings[easing or 'outExpo'],
@@ -56,10 +57,14 @@ end
 
 function Message:draw()
   local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
+  local x, y = self.position.x - w / 2, self.position.y - h / 2
 
   love.graphics.push('all')
     love.graphics.setFont(self.font)
-    love.graphics.print(self.text, self.position.x - w / 2, self.position.y - h / 2)
+    love.graphics.setColor(unpack(self.color))
+    love.graphics.print(self.text, x, y)
+    love.graphics.setColor(1.0, 0.0, 0.0)
+    love.graphics.rectangle('line', x, y, w, h)
   love.graphics.pop()
 end
 
