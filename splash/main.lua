@@ -44,7 +44,7 @@ function love.load(args)
     math.random()
   end
 
-  _messages[#_messages + 1] = Message.new('TOFUCKEN', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 }, Vector.new(256, 0), Vector.new(256, 224), 'outBounce', 2.5)
+  _messages[#_messages + 1] = Message.new('AppleJack', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 }, Vector.new(256, 0), Vector.new(256, 224), 'outBounce', 2.5)
   _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, Vector.new(256, 512), Vector.new(256, 270), 'outExpo', 2.5)
 end
 
