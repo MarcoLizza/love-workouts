@@ -24,26 +24,58 @@ local Path = {}
 
 Path.__index = Path
 
+local function bezier(p0, p1, p2, t)
+  local omt = 1 - t
+  return p0
+end
+
 function Path.new()
   return setmetatable({
       segments = {},
       current = nil,
       time = 0,
       position = nil
-    }, Message)
+    }, Path)
 end
 
 function Path:clear()
+  self.segments = {}
+  self.iterator = nil
+  self.index = nil
+  self.time = 0
+  self.position = nil
 end
 
-function Path:push(duration, from, to, mid_point, xform)
+function Path:push(duration, from, to, mid_point, easing)
+  self.segments[#self.segments + 1] = {
+      p0 = from,
+      p1 = mid_point,
+      p2 = to,
+      duration = duration,
+      easing = Easings[easing or 'linear']
+    }
 end
 
 function Path:seek(time)
+  for index, segment in ipairs(self.segments) do
+    if time <= segment.duration then
+      self.index = index
+      break
+    end
+    time = time - segment.duration
+  end
 end
 
 function Path:update(dt)
   self.time = self.time + dt
+  local current = self.segments[self.index]
+  while self.time > self.current.duration do
+    self.time = self.time - self.current.duration
+    self.index = self.index + 1
+    current = self.segments[self.index]
+  end
+  local t = self.time / current.duration
+  self.position = bezier(current.p0, current.p1, current.p2, t)
 end
 
 function Path:position()
