@@ -20,44 +20,36 @@ freely, subject to the following restrictions:
 
 ]] --
 
-local Easings = require('lib/math/easings')
+local Path = require('path')
 
 local Message = {}
 
 Message.__index = Message
 
 function Message.new(text, font, color, origin, destination, easing, duration)
+  local path = Path.new()
+  path:push(duration, origin, destination, origin, easing)
+  path:seek(0)
+
   return setmetatable({
       text = text,
       font = love.graphics.newFont(font.family, font.size),
       color = color,
-      origin = origin,
-      destination = destination,
-      easing = Easings[easing or 'outExpo'],
-      duration = duration or 5,
-      direction = destination:clone():sub(origin),
-      time = 0,
-      position = nil
+      path = path
     }, Message)
 end
 
 function Message:update(dt)
-  self.time = self.time + dt
-
-  local ratio = self.time >= self.duration and 1.0 or self.easing(self.time, 0, 1, self.duration)
-
-  self.position = self.direction:clone():scale(ratio):add(self.origin)
-
---  self.x = (love.graphics.getWidth() - w) / 2
---  local value = math.abs(math.cos(self.time * 4.0)) * (love.graphics.getHeight() / 2)
---  local dampening = (self.time >= self.duration) and 0.0 or (1.0 - (self.time / self.duration))
---  self.y = (love.graphics.getHeight() / 2) - (h / 2) - value * dampening
-  -- self.y = self.easing(self.time, 0, love.graphics.getHeight() / 2, self.duration) - (h / 2)
+  if self.path.loops == 0 then
+    self.path:update(dt)
+  end
 end
 
 function Message:draw()
+  local position = self.path.position
+
   local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
-  local x, y = self.position.x - w / 2, self.position.y - h / 2
+  local x, y = position.x - w / 2, position.y - h / 2
 
   love.graphics.push('all')
     love.graphics.setFont(self.font)
