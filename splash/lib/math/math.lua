@@ -20,15 +20,17 @@ freely, subject to the following restrictions:
 
 ]] --
 
-local function lerp(a, b, ratio)
+local function lerp(a, b, t)
   if type(a) == 'table' then
     local v = {}
     for i = 1, #a do
-      table.insert(v, lerp(a[i], b[i], ratio))
+      table.insert(v, lerp(a[i], b[i], t))
     end
     return v
   else
-    return (b - a) * ratio + a
+    return (1 - t) * a + t * b
+    -- More numerical stable than the following one.
+    -- return (b - a) * ratio + a
   end
 end
 
