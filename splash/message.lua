@@ -26,9 +26,9 @@ local Message = {}
 
 Message.__index = Message
 
-function Message.new(text, font, color, origin, destination, easing, duration)
+function Message.new(text, font, color, points, duration, easing)
   local path = Path.new()
-  path:push(duration, origin, destination, origin, easing)
+  path:push(points, duration, easing)
   path:seek(0)
 
   return setmetatable({
@@ -40,9 +40,7 @@ function Message.new(text, font, color, origin, destination, easing, duration)
 end
 
 function Message:update(dt)
-  if self.path.loops == 0 then
-    self.path:update(dt)
-  end
+  self.path:step(dt)
 end
 
 function Message:draw()
