@@ -27,27 +27,64 @@ local Path = {}
 
 Path.__index = Path
 
--- Let
---   u = 1 - t
--- Then
---   B(p0, p1, p2, t) = u*u*p0 + 2*t*u*p1 + t*t*p2
-local function bezier(p0, p1, p2, t)
-  local u = 1 - t
-  local a = u * u
-  local b = 2 * t * u
-  local c = t * t
-  local x = a * p0.x + b * p1.x + c * p2.x
-  local y = a * p0.y + b * p1.y + c * p2.y
-  return Vector.new(x, y)
+local unpack = unpack or table.unpack
+
+-- The function *compiles* a bézier curve evaluator, given the control points
+-- (as `Vector` instances). The aim of this function is to avoid passing the
+-- control-control_points at each evaluation.
+--
+-- It supports linear, quadratic, and cubic béziers cuvers. The evaluators are
+-- the following (with `u = 1 - t`)
+--
+-- B1(p0, p1, t) = u*p0 + t*p2
+-- B2(p0, p1, p2, t) = u*u*p0 + 2*t*u*p1 + t*t*p2
+-- B3(p0, p1, p2, p3, t) = u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3
+local function compile_bezier(control_points)
+  if #control_points == 4 then
+    local p0, p1, p2, p3 = unpack(control_points)
+    return function(t)
+        local u = 1 - t
+        local uu = u * u -- Precalculate, to avoid a two multiplications.
+        local tt = t * t
+        local a = uu * u
+        local b = 3 * uu * t
+        local c = 3 * u * tt
+        local d = t * tt
+        local x = a * p0.x + b * p1.x + c * p2.x + d * p3.x
+        local y = a * p0.y + b * p1.y + c * p2.y + d * p3.y
+        return Vector.new(x, y)
+      end
+  elseif #control_points == 3 then
+    local p0, p1, p2 = unpack(control_points)
+    return function(t)
+        local u = 1 - t
+        local a = u * u
+        local b = 2 * t * u
+        local c = t * t
+        local x = a * p0.x + b * p1.x + c * p2.x
+        local y = a * p0.y + b * p1.y + c * p2.y
+        return Vector.new(x, y)
+      end
+  elseif #control_points == 2 then
+    local p0, p1 = unpack(control_points)
+    return function(t)
+        local u = 1 - t
+        local x = u * p0.x + t * p1.x
+        local y = u * p0.y + t * p1.y
+        return Vector.new(x, y)
+      end
+  else
+    error('Beziér curves are supported up to 3rd order.')
+  end
 end
 
 function Path.new()
   return setmetatable({
       segments = {},
-      current = nil,
+      index = nil,
       time = 0,
       position = nil,
-      loops = 0
+      finished = false
     }, Path)
 end
 
@@ -59,17 +96,19 @@ function Path:clear()
   self.finished = false
 end
 
-function Path:push(duration, from, to, mid_point, easing)
+function Path:push(control_points, duration, easing)
   self.segments[#self.segments + 1] = {
-      p0 = from,
-      p1 = mid_point or from,
-      p2 = to,
+      -- control_points = control_points,
       duration = duration,
-      easing = Easings[easing or 'linear']
+      easing = Easings[easing or 'linear'],
+      bezier = compile_bezier(control_points)
     }
 end
 
 function Path:seek(time)
+  self.time = 0
+  self.index = nil
+  self.position = nil
   for index, segment in ipairs(self.segments) do
     if time <= segment.duration then
       self.index = index
@@ -77,11 +116,11 @@ function Path:seek(time)
     end
     time = time - segment.duration
   end
-  self.time = time
-  self.finished = false
+  self.finished = not self.index
+  self:step(time)
 end
 
-function Path:update(dt)
+function Path:step(dt)
   if self.finished then
     return
   end
@@ -100,7 +139,7 @@ function Path:update(dt)
 
   if current then
     local t = current.easing(self.time, 0, 1, current.duration)
-    self.position = bezier(current.p0, current.p1, current.p2, t)
+    self.position = current.bezier(t)
   else
     self.finished = true
   end
