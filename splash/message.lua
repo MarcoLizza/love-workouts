@@ -26,6 +26,8 @@ local Message = {}
 
 Message.__index = Message
 
+local unpack = unpack or table.unpack
+
 function Message.new(text, font, color, points, duration, easing)
   local path = Path.new()
   path:push(points, duration, easing)

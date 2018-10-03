@@ -29,6 +29,53 @@ Path.__index = Path
 
 local unpack = unpack or table.unpack
 
+local function compile_bezier(control_points)
+  local n = #control_points
+  local bn = {}
+  bn[1] = 1
+  for i = 2, n - 1 do
+    bn[i] = bn[i - 1] * (n + 1 - i) / i
+  end
+  return function(t)
+      local u = 1 - t
+      local tn = 1
+      local x = control_points[1].x * u
+      local y = control_points[1].y * u
+      for i = 2, n - 1 do
+        tn = tn * t -- Incremental powers
+        local tn_bc = tn * bn[i]
+        x = (x + tn_bc * control_points[i].x) * u
+        y = (y + tn_bc * control_points[i].y) * u
+      end
+      local tn_t = tn * t
+      x = x + tn_t * control_points[n].x
+      y = y + tn_t * control_points[n].y
+      return Vector.new(x, y)
+    end
+end
+
+local function compile_bezier_horner(control_points)
+  local n = #control_points
+  return function(t)
+      local u = 1 - t
+      local bc = 1
+      local tn = 1
+      local x = control_points[1].x * u
+      local y = control_points[1].y * u
+      for i = 2, n - 1 do
+        tn = tn * t -- Incremental powers
+        bc = bc * (n + 1 - i) / i -- Multiplicative formula for binomial calulation
+        local tn_bc = tn * bc
+        x = (x + tn_bc * control_points[i].x) * u
+        y = (y + tn_bc * control_points[i].y) * u
+      end
+      local tn_t = tn * t
+      x = x + tn_t * control_points[n].x
+      y = y + tn_t * control_points[n].y
+      return Vector.new(x, y)
+    end
+end
+
 -- The function *compiles* a bézier curve evaluator, given the control points
 -- (as `Vector` instances). The aim of this function is to avoid passing the
 -- control-control_points at each evaluation.
@@ -39,7 +86,7 @@ local unpack = unpack or table.unpack
 -- B1(p0, p1, t) = u*p0 + t*p2
 -- B2(p0, p1, p2, t) = u*u*p0 + 2*t*u*p1 + t*t*p2
 -- B3(p0, p1, p2, p3, t) = u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3
-local function compile_bezier(control_points)
+local function compile_bezier_decasteljau(control_points)
   if #control_points == 4 then
     local p0, p1, p2, p3 = unpack(control_points)
     return function(t)
