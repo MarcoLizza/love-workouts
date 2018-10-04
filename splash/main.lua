@@ -88,8 +88,9 @@ local function compile_bezier_fast_horner(control_points)
 end
 
 local function compile_bezier_decasteljau(control_points)
+  local n = #control_points
   local p0, p1, p2, p3 = unpack(control_points)
-  if p3 then
+  if n == 4 then
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)
     local p2x, p2y = unpack(p2)
@@ -106,7 +107,7 @@ local function compile_bezier_decasteljau(control_points)
         local y = a * p0y + b * p1y + c * p2y + d * p3y
         return x, y
       end
-  elseif p2 then
+  elseif n == 3 then
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)
     local p2x, p2y = unpack(p2)
@@ -119,8 +120,7 @@ local function compile_bezier_decasteljau(control_points)
         local y = a * p0y + b * p1y + c * p2y
         return x, y
       end
-  elseif p1 then
-    local p0, p1 = unpack(control_points)
+  elseif n == 2 then
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)
     return function(t)
@@ -135,7 +135,7 @@ local function compile_bezier_decasteljau(control_points)
 end
 
 local function test()
-  local COUNT = 10000000
+  local COUNT = 1000000
   for n = 2, 4 do
     print(string.format('BEZIER #%d ORDER', n))
     local p = { }
@@ -167,16 +167,33 @@ local function test()
   local points = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } }
   local b_d = compile_bezier_decasteljau(points)
   local b_h = compile_bezier_horner(points)
+  local b_f = compile_bezier_fast_horner(points)
   local b_l = compile_bezier_love2d(points)
-  for i = 0, 1000 do
-    local t = i / 1000
+  for i = 0, 100 do
+    local t = i / 100
     local ax, ay = b_d(t)
     local bx, by = b_h(t)
-    local cx, cy = b_l(t)
-    print(string.format('%.2f %.2f %.2f %.2f %.2f %.2f | %.2f  %.2f',
-        ax, bx, cx, ay, by, cy, error(ax, ay, cx, cy), error(bx, by, cx, cy)))
+    local cx, cy = b_f(t)
+    local dx, dy = b_l(t)
+    local e_d_l = error(ax, ay, dx, dy)
+    local e_h_f = error(bx, by, cx, cy)
+    local e_h_l = error(bx, by, dx, dy)
+    if e_d_l > 0.000001 then
+      print(string.format('DvsL %.2f %.2f %.2f %.2f | %f',
+        ax, dx, ay, dy, e_d_l))
+    end
+    if e_h_f > 0.000001 then
+      print(string.format('HvsF %.2f %.2f %.2f %.2f | %f',
+        bx, cx, by, cy, e_h_f))
+    end
+    if e_h_l > 0.000001 then
+      print(string.format('HvsL %.2f %.2f %.2f %.2f | %f',
+        bx, dx, by, dy, e_h_l))
+    end
   end
 end
+
+test()
 
 function love.load(args)
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
@@ -192,8 +209,6 @@ function love.load(args)
   for _ = 1, 1024 do
     math.random()
   end
-
-  test()
 
   _messages[#_messages + 1] = Message.new('aPPlEjAck', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  { { 256, 0 }, { 0, 0 }, { 256, 224 } }, 2.5, 'outBounce')
   _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, { { 256, 512 }, { 0, 0 }, { 256, 270 } }, 2.5, 'outExpo')
