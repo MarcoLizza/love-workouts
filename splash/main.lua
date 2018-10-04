@@ -88,8 +88,8 @@ local function compile_bezier_fast_horner(control_points)
 end
 
 local function compile_bezier_decasteljau(control_points)
-  if #control_points == 4 then
-    local p0, p1, p2, p3 = unpack(control_points)
+  local p0, p1, p2, p3 = unpack(control_points)
+  if p3 then
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)
     local p2x, p2y = unpack(p2)
@@ -106,8 +106,7 @@ local function compile_bezier_decasteljau(control_points)
         local y = a * p0y + b * p1y + c * p2y + d * p3y
         return x, y
       end
-  elseif #control_points == 3 then
-    local p0, p1, p2 = unpack(control_points)
+  elseif p2 then
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)
     local p2x, p2y = unpack(p2)
@@ -120,7 +119,7 @@ local function compile_bezier_decasteljau(control_points)
         local y = a * p0y + b * p1y + c * p2y
         return x, y
       end
-  elseif #control_points == 2 then
+  elseif p1 then
     local p0, p1 = unpack(control_points)
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)
@@ -131,7 +130,7 @@ local function compile_bezier_decasteljau(control_points)
         return x, y
       end
   else
-    error('Beziér curves are supported up to 3rd order.')
+    error('Beziér curves are supported from 2nd up to 3rd order.')
   end
 end
 
@@ -160,16 +159,22 @@ local function test()
     end
   end
 
+  local function error(ax, ay, bx, by)
+      local dx, dy = ax - bx, ay - by
+      return math.sqrt(dx * dx + dy * dy)
+  end
+
   local points = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } }
   local b_d = compile_bezier_decasteljau(points)
   local b_h = compile_bezier_horner(points)
   local b_l = compile_bezier_love2d(points)
-  for i = 0, 100 do
-    local t = i / 100;
+  for i = 0, 1000 do
+    local t = i / 1000
     local ax, ay = b_d(t)
     local bx, by = b_h(t)
     local cx, cy = b_l(t)
-    print(string.format('%.2f %.2f %.2f %.2f %.2f %.2f', ax, bx, cx, ay, by, cy))
+    print(string.format('%.2f %.2f %.2f %.2f %.2f %.2f | %.2f  %.2f',
+        ax, bx, cx, ay, by, cy, error(ax, ay, cx, cy), error(bx, by, cx, cy)))
   end
 end
 
