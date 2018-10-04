@@ -29,50 +29,20 @@ Path.__index = Path
 
 local unpack = unpack or table.unpack
 
-local function compile_bezier(control_points)
-  local n = #control_points
-  local bn = {}
-  bn[1] = 1
-  for i = 2, n - 1 do
-    bn[i] = bn[i - 1] * (n + 1 - i) / i
-  end
-  return function(t)
-      local u = 1 - t
-      local tn = 1
-      local x = control_points[1].x * u
-      local y = control_points[1].y * u
-      for i = 2, n - 1 do
-        tn = tn * t -- Incremental powers
-        local tn_bc = tn * bn[i]
-        x = (x + tn_bc * control_points[i].x) * u
-        y = (y + tn_bc * control_points[i].y) * u
-      end
-      local tn_t = tn * t
-      x = x + tn_t * control_points[n].x
-      y = y + tn_t * control_points[n].y
-      return Vector.new(x, y)
-    end
-end
-
+-- https://www.math.ubc.ca/~cass/graphics/manual/pdf/a6.pdf
 local function compile_bezier_horner(control_points)
   local n = #control_points
   return function(t)
-      local u = 1 - t
-      local bc = 1
-      local tn = 1
-      local x = control_points[1].x * u
-      local y = control_points[1].y * u
-      for i = 2, n - 1 do
-        tn = tn * t -- Incremental powers
-        bc = bc * (n + 1 - i) / i -- Multiplicative formula for binomial calulation
-        local tn_bc = tn * bc
-        x = (x + tn_bc * control_points[i].x) * u
-        y = (y + tn_bc * control_points[i].y) * u
+      local s = 1 - t
+      local C = n * t
+      local Px = control_points[1].x
+      local Py = control_points[1].y
+      for k = 1, n do
+        Px = Px * s + C * control_points[k].x
+        Py = Py * s + C * control_points[k].y
+        C = C * ((n - k) / (k + 1)) * t
       end
-      local tn_t = tn * t
-      x = x + tn_t * control_points[n].x
-      y = y + tn_t * control_points[n].y
-      return Vector.new(x, y)
+      return Vector.new(Px, Py)
     end
 end
 
@@ -91,7 +61,7 @@ local function compile_bezier_decasteljau(control_points)
     local p0, p1, p2, p3 = unpack(control_points)
     return function(t)
         local u = 1 - t
-        local uu = u * u -- Precalculate, to avoid a two multiplications.
+        local uu = u * u -- Precalculate, to avoid two multiplications.
         local tt = t * t
         local a = uu * u
         local b = 3 * uu * t
