@@ -46,17 +46,18 @@ local function compile_bezier_horner(control_points)
 end
 
 -- The function *compiles* a bézier curve evaluator, given the control points
--- (as `Vector` instances). The aim of this function is to avoid passing the
+-- (as two-element arrays). The aim of this function is to avoid passing the
 -- control-control_points at each evaluation.
 --
 -- It supports linear, quadratic, and cubic béziers cuvers. The evaluators are
 -- the following (with `u = 1 - t`)
 --
--- B1(p0, p1, t) = u*p0 + t*p2
+-- B1(p0, p1, t) = u*p0 + t*p1
 -- B2(p0, p1, p2, t) = u*u*p0 + 2*t*u*p1 + t*t*p2
 -- B3(p0, p1, p2, p3, t) = u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3
 local function compile_bezier_decasteljau(control_points)
-  if #control_points == 4 then
+  local n = #control_points
+  if n == 4 then
     local p0, p1, p2, p3 = unpack(control_points)
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)
@@ -64,7 +65,7 @@ local function compile_bezier_decasteljau(control_points)
     local p3x, p3y = unpack(p3)
     return function(t)
         local u = 1 - t
-        local uu = u * u -- Precalculate, to avoid two multiplications.
+        local uu = u * u
         local tt = t * t
         local a = uu * u
         local b = 3 * uu * t
@@ -74,7 +75,7 @@ local function compile_bezier_decasteljau(control_points)
         local y = a * p0y + b * p1y + c * p2y + d * p3y
         return x, y
       end
-  elseif #control_points == 3 then
+  elseif n == 3 then
     local p0, p1, p2 = unpack(control_points)
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)
@@ -88,7 +89,7 @@ local function compile_bezier_decasteljau(control_points)
         local y = a * p0y + b * p1y + c * p2y
         return x, y
       end
-  elseif #control_points == 2 then
+  elseif n == 2 then
     local p0, p1 = unpack(control_points)
     local p0x, p0y = unpack(p0)
     local p1x, p1y = unpack(p1)

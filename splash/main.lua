@@ -87,6 +87,52 @@ local function compile_bezier_fast_horner(control_points)
     end
 end
 
+local function compile_bezier_slow_decasteljau(control_points)
+  local n = #control_points
+  local p0, p1, p2, p3 = unpack(control_points)
+  if n == 4 then
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
+    local p2x, p2y = unpack(p2)
+    local p3x, p3y = unpack(p3)
+    return function(t)
+        local u = 1 - t
+        local p01x, p01y = u * p0x + t * p1x, u * p0y + t * p1y
+        local p12x, p12y = u * p1x + t * p2x, u * p1y + t * p2y
+        local p23x, p23y = u * p2x + t * p3x, u * p2y + t * p3y
+
+        local p012x, p012y = u * p01x + t * p12x, u * p01y + t * p12y
+        local p123x, p123y = u * p12x + t * p23x, u * p12y + t * p23y
+
+        local p0123x, p0123y = u * p012x + t * p123x, u * p012y + t * p123y
+        return p0123x, p0123y
+      end
+  elseif n == 3 then
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
+    local p2x, p2y = unpack(p2)
+    return function(t)
+        local u = 1 - t
+        local a = u * u
+        local b = 2 * t * u
+        local c = t * t
+        local x = a * p0x + b * p1x + c * p2x
+        local y = a * p0y + b * p1y + c * p2y
+        return x, y
+      end
+  elseif n == 2 then
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
+    return function(t)
+        local u = 1 - t
+        local x = u * p0x + t * p1x
+        local y = u * p0y + t * p1y
+        return x, y
+      end
+  else
+    error('Beziér curves are supported from 2nd up to 3rd order.')
+  end
+
 local function compile_bezier_decasteljau(control_points)
   local n = #control_points
   local p0, p1, p2, p3 = unpack(control_points)
