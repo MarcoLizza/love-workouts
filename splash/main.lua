@@ -22,7 +22,6 @@ freely, subject to the following restrictions:
 
 -- TODO: apply shader or color
 
-local Vector = require('lib/math/vector')
 local Message = require('message')
 
 local _messages = {}
@@ -43,8 +42,10 @@ function love.load(args)
     math.random()
   end
 
-  _messages[#_messages + 1] = Message.new('aPPlEjAck', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  { Vector.new(256, 0), Vector.new(256, 224) }, 2.5, 'outBounce')
-  _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, { Vector.new(256, 512), Vector.new(256, 270) }, 2.5, 'outExpo')
+  test()
+
+  _messages[#_messages + 1] = Message.new('aPPlEjAck', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  { { 256, 0 }, { 0, 0 }, { 256, 224 } }, 2.5, 'outBounce')
+  _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, { { 256, 512 }, { 0, 0 }, { 256, 270 } }, 2.5, 'outExpo')
 end
 
 function love.update(dt)
@@ -59,6 +60,9 @@ function love.draw()
   end
 
 --  love.graphics.line(0, 256, 512, 256)
+  local b = love.math.newBezierCurve({256, 0, 0, 0, 256, 224})
+  love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+  love.graphics.line(b:render())
 
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
@@ -66,7 +70,6 @@ function love.draw()
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
-  local point = Vector.new(x, y)
 end
 
 function love.keypressed(key, scancode, isrepeat)

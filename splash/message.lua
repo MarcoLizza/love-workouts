@@ -46,10 +46,12 @@ function Message:update(dt)
 end
 
 function Message:draw()
-  local position = self.path.position
-
+  local x, y = unpack(self.path.position)
+  love.graphics.setColor(0, 1, 0)
+  love.graphics.circle('fill', x, y, 2)
+--[[
   local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
-  local x, y = position.x - w / 2, position.y - h / 2
+  local x, y = x - w / 2, y - h / 2
 
   love.graphics.push('all')
     love.graphics.setFont(self.font)
@@ -57,7 +59,7 @@ function Message:draw()
     love.graphics.print(self.text, x, y)
     love.graphics.setColor(1.0, 0.0, 0.0)
     love.graphics.rectangle('line', x, y, w, h)
-  love.graphics.pop()
+  love.graphics.pop() ]]--
 end
 
 return Message

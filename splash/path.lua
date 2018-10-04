@@ -21,7 +21,6 @@ freely, subject to the following restrictions:
 ]] --
 
 local Easings = require('lib/math/easings')
-local Vector = require('lib/math/vector')
 
 local Path = {}
 
@@ -35,14 +34,14 @@ local function compile_bezier_horner(control_points)
   return function(t)
       local s = 1 - t
       local C = n * t
-      local Px = control_points[1].x
-      local Py = control_points[1].y
+      local Px, Py = unpack(control_points[1])
       for k = 1, n do
-        Px = Px * s + C * control_points[k].x
-        Py = Py * s + C * control_points[k].y
+        local ykx, yky = unpack(control_points[k])
+        Px = Px * s + C * ykx
+        Py = Py * s + C * yky
         C = C * ((n - k) / (k + 1)) * t
       end
-      return Vector.new(Px, Py)
+      return Px, Py
     end
 end
 
@@ -59,6 +58,10 @@ end
 local function compile_bezier_decasteljau(control_points)
   if #control_points == 4 then
     local p0, p1, p2, p3 = unpack(control_points)
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
+    local p2x, p2y = unpack(p2)
+    local p3x, p3y = unpack(p3)
     return function(t)
         local u = 1 - t
         local uu = u * u -- Precalculate, to avoid two multiplications.
@@ -67,28 +70,33 @@ local function compile_bezier_decasteljau(control_points)
         local b = 3 * uu * t
         local c = 3 * u * tt
         local d = t * tt
-        local x = a * p0.x + b * p1.x + c * p2.x + d * p3.x
-        local y = a * p0.y + b * p1.y + c * p2.y + d * p3.y
-        return Vector.new(x, y)
+        local x = a * p0x + b * p1x + c * p2x + d * p3x
+        local y = a * p0y + b * p1y + c * p2y + d * p3y
+        return x, y
       end
   elseif #control_points == 3 then
     local p0, p1, p2 = unpack(control_points)
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
+    local p2x, p2y = unpack(p2)
     return function(t)
         local u = 1 - t
         local a = u * u
         local b = 2 * t * u
         local c = t * t
-        local x = a * p0.x + b * p1.x + c * p2.x
-        local y = a * p0.y + b * p1.y + c * p2.y
-        return Vector.new(x, y)
+        local x = a * p0x + b * p1x + c * p2x
+        local y = a * p0y + b * p1y + c * p2y
+        return x, y
       end
   elseif #control_points == 2 then
     local p0, p1 = unpack(control_points)
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
     return function(t)
         local u = 1 - t
-        local x = u * p0.x + t * p1.x
-        local y = u * p0.y + t * p1.y
-        return Vector.new(x, y)
+        local x = u * p0x + t * p1x
+        local y = u * p0y + t * p1y
+        return x, y
       end
   else
     error('Beziér curves are supported up to 3rd order.')
@@ -118,7 +126,7 @@ function Path:push(control_points, duration, easing)
       -- control_points = control_points,
       duration = duration,
       easing = Easings[easing or 'linear'],
-      bezier = compile_bezier(control_points)
+      bezier = compile_bezier_decasteljau(control_points)
     }
 end
 
@@ -156,7 +164,7 @@ function Path:step(dt)
 
   if current then
     local t = current.easing(self.time, 0, 1, current.duration)
-    self.position = current.bezier(t)
+    self.position = { current.bezier(t) }
   else
     self.finished = true
   end
