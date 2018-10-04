@@ -21,11 +21,157 @@ freely, subject to the following restrictions:
 ]] --
 
 -- TODO: apply shader or color
+-- TODO: https://gamedevelopment.tutsplus.com/tutorials/create-a-glowing-flowing-lava-river-using-bezier-curves-and-shaders--gamedev-919
+
+-- https://javascript.info/bezier-curve
 
 local Message = require('message')
 
+local unpack = unpack or table.unpack
+
 local _messages = {}
 local _debug = false
+
+local function compile_bezier_love2d(control_points)
+  local points = {}
+  for _, v in ipairs(control_points) do
+    points[#points + 1] = v[1]
+    points[#points + 1] = v[2]
+  end
+  local bezier = love.math.newBezierCurve(points)
+  return function(t)
+      local x, y = bezier:evaluate(t)
+      return x, y
+    end
+end
+
+-- https://www.gamedev.net/articles/programming/math-and-physics/practical-guide-to-bezier-curves-r3166/
+local function compile_bezier_horner(control_points)
+  local n = #control_points
+  return function(t)
+      local u = 1 - t
+      local bc = 1
+      local tn = 1
+      local x, y = unpack(control_points[1])
+      x = x * u
+      y = y * u
+      for i = 2, n - 1 do
+        tn = tn * t -- Incremental powers
+        bc = bc * (n + 1 - i) / i -- Multiplicative formula for binomial calulation
+        local tn_bc = tn * bc
+        local px, py = unpack(control_points[i])
+        x = (x + tn_bc * px) * u
+        y = (y + tn_bc * py) * u
+      end
+      local tn_t = tn * t
+      local px, py = unpack(control_points[n])
+      x = x + tn_t * px
+      y = y + tn_t * py
+      return x, y
+    end
+end
+
+local function compile_bezier_fast_horner(control_points)
+  local n = #control_points
+  return function(t)
+      local s = 1 - t
+      local C = n * t
+      local Px, Py = unpack(control_points[1])
+      for k = 1, n do
+        local ykx, yky = unpack(control_points[k])
+        Px = Px * s + C * ykx
+        Py = Py * s + C * yky
+        C = C * t * (n - k) / (k + 1)
+      end
+      return Px, Py
+    end
+end
+
+local function compile_bezier_decasteljau(control_points)
+  if #control_points == 4 then
+    local p0, p1, p2, p3 = unpack(control_points)
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
+    local p2x, p2y = unpack(p2)
+    local p3x, p3y = unpack(p3)
+    return function(t)
+        local u = 1 - t
+        local uu = u * u -- Precalculate, to avoid two multiplications.
+        local tt = t * t
+        local a = uu * u
+        local b = 3 * uu * t
+        local c = 3 * u * tt
+        local d = t * tt
+        local x = a * p0x + b * p1x + c * p2x + d * p3x
+        local y = a * p0y + b * p1y + c * p2y + d * p3y
+        return x, y
+      end
+  elseif #control_points == 3 then
+    local p0, p1, p2 = unpack(control_points)
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
+    local p2x, p2y = unpack(p2)
+    return function(t)
+        local u = 1 - t
+        local a = u * u
+        local b = 2 * t * u
+        local c = t * t
+        local x = a * p0x + b * p1x + c * p2x
+        local y = a * p0y + b * p1y + c * p2y
+        return x, y
+      end
+  elseif #control_points == 2 then
+    local p0, p1 = unpack(control_points)
+    local p0x, p0y = unpack(p0)
+    local p1x, p1y = unpack(p1)
+    return function(t)
+        local u = 1 - t
+        local x = u * p0x + t * p1x
+        local y = u * p0y + t * p1y
+        return x, y
+      end
+  else
+    error('Beziér curves are supported up to 3rd order.')
+  end
+end
+
+local function test()
+  local COUNT = 10000000
+  for n = 2, 4 do
+    print(string.format('BEZIER #%d ORDER', n))
+    local p = { }
+    for _ = 1, n do
+      p[#p  + 1] = { math.random(), math.random() }
+    end
+    local bezier = {
+        ['decasteljau'] = compile_bezier_decasteljau(p),
+        ['horner'] = compile_bezier_horner(p),
+        ['fast-horner'] = compile_bezier_fast_horner(p),
+        ['love2d'] = compile_bezier_love2d(p)
+      }
+    for i, b in pairs(bezier) do
+      local s = os.clock()
+      for j = 0, COUNT do
+        local t = j / COUNT
+        b(t)
+      end
+      local e = os.clock()
+      print(string.format('%s took %.3fs', i, e - s))
+    end
+  end
+
+  local points = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } }
+  local b_d = compile_bezier_decasteljau(points)
+  local b_h = compile_bezier_horner(points)
+  local b_l = compile_bezier_love2d(points)
+  for i = 0, 100 do
+    local t = i / 100;
+    local ax, ay = b_d(t)
+    local bx, by = b_h(t)
+    local cx, cy = b_l(t)
+    print(string.format('%.2f %.2f %.2f %.2f %.2f %.2f', ax, bx, cx, ay, by, cy))
+  end
+end
 
 function love.load(args)
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
