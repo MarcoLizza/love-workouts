@@ -183,7 +183,7 @@ So many variants to choose from... which one we should pick? We can't answer pro
 
  Here's a table resuming the result we got.
 
-| Order | Variant               |   Speed |
+| Order | Variant               |    Cost |
 |:-----:|:----------------------|--------:|
 |   2   | love                  | 100,00% |
 |   2   | bernstein             |  10,64% |
@@ -222,3 +222,7 @@ By increasing the order of the curve we expect the performance to reduce. In fac
 In terms of **precision** we checked the result being equal up to the 6th decimal point (10^-6) when compared with the framework (slower) implementation. As a side-note, the *Horner's method* algorithms a pretty imprecise and are impractical for common usages.
 
 ## Applications
+
+Other than path-management, as in my case, Bézier curves can be used in a lot of interesting cases. I unconsciously avoided them for far too long, it's about time to get back on track.
+
+One very intersting use of them is described [here](https://gamedevelopment.tutsplus.com/tutorials/create-a-glowing-flowing-lava-river-using-bezier-curves-and-shaders--gamedev-919) where, coupled with a clever use of fragment shaders, a flowing lava river is simulated. Guess that these curves can be very useful for dynamically-modified water rivers, too.
