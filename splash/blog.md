@@ -186,24 +186,24 @@ So many variants to choose from... which one we should pick? We can't answer pro
 | Order | Variant               |    Cost |
 |:-----:|:----------------------|--------:|
 |   2   | love                  | 100,00% |
-|   2   | bernstein             |  10,64% |
 |   2   | decasteljau           |  19,64% |
 |   2   | iterative-decasteljau | 105,47% |
 |   2   | optimized-decasteljau |  10,75% |
+|   2   | bernstein             |  10,64% |
 |   2   | horner                |  32,26% |
 |   2   | optimized-horner      |  43,93% |
 |   3   | love                  | 100,00% |
-|   3   | bernstein             |  16,21% |
 |   3   | decasteljau           |  43,24% |
 |   3   | iterative-decasteljau | 182,71% |
 |   3   | optimized-decasteljau |  20,66% |
+|   3   | bernstein             |  16,21% |
 |   3   | horner                |  46,74% |
 |   3   | optimized-horner      |  68,22% |
 |   4   | love                  | 100,00% |
-|   4   | bernstein             |  13,38% |
 |   4   | decasteljau           |  48,96% |
 |   4   | iterative-decasteljau | 164,57% |
 |   4   | optimized-decasteljau |  18,21% |
+|   4   | bernstein             |  13,38% |
 |   4   | horner                |  38,22% |
 |   4   | optimized-horner      |  46,05% |
 
