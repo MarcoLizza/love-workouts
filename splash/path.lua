@@ -28,23 +28,6 @@ Path.__index = Path
 
 local unpack = unpack or table.unpack
 
--- https://www.math.ubc.ca/~cass/graphics/manual/pdf/a6.pdf
-local function compile_bezier_horner(control_points)
-  local n = #control_points
-  return function(t)
-      local s = 1 - t
-      local C = n * t
-      local Px, Py = unpack(control_points[1])
-      for k = 1, n do
-        local ykx, yky = unpack(control_points[k])
-        Px = Px * s + C * ykx
-        Py = Py * s + C * yky
-        C = C * ((n - k) / (k + 1)) * t
-      end
-      return Px, Py
-    end
-end
-
 -- The function *compiles* a bézier curve evaluator, given the control points
 -- (as two-element arrays). The aim of this function is to avoid passing the
 -- control-control_points at each evaluation.
@@ -55,7 +38,7 @@ end
 -- B1(p0, p1, t) = u*p0 + t*p1
 -- B2(p0, p1, p2, t) = u*u*p0 + 2*t*u*p1 + t*t*p2
 -- B3(p0, p1, p2, p3, t) = u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3
-local function compile_bezier_decasteljau(control_points)
+local function compile_bezier(control_points)
   local n = #control_points
   if n == 4 then
     local p0, p1, p2, p3 = unpack(control_points)
@@ -100,7 +83,7 @@ local function compile_bezier_decasteljau(control_points)
         return x, y
       end
   else
-    error('Beziér curves are supported up to 3rd order.')
+    error('Bézier curves are supported up to 4th order.')
   end
 end
 
@@ -127,7 +110,7 @@ function Path:push(control_points, duration, easing)
       -- control_points = control_points,
       duration = duration,
       easing = Easings[easing or 'linear'],
-      bezier = compile_bezier_decasteljau(control_points)
+      bezier = compile_bezier(control_points)
     }
 end
 
