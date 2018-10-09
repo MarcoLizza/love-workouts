@@ -32,6 +32,20 @@ local unpack = unpack or table.unpack
 local _messages = {}
 local _debug = false
 
+local _points = {
+  { { 256, 0 }, { 0, 0 }, { 256, 224 } },
+  { { 256, 512 }, { 0, 0 }, { 256, 270 } }
+}
+
+local function convert_points(points)
+  local sequence = {}
+  for _, point in ipairs(points) do
+    sequence[#sequence + 1] = point[1]
+    sequence[#sequence + 1] = point[2]
+  end
+  return sequence
+end
+
 function love.load(args)
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 
@@ -47,8 +61,8 @@ function love.load(args)
     math.random()
   end
 
-  _messages[#_messages + 1] = Message.new('aPPlEjAck', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  { { 256, 0 }, { 0, 0 }, { 256, 224 } }, 2.5, 'outBounce')
-  _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, { { 256, 512 }, { 0, 0 }, { 256, 270 } }, 2.5, 'outExpo')
+  _messages[#_messages + 1] = Message.new('aPPlEjAck', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  _points[1], 2.5, 'outBounce')
+  _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, _points[2], 2.5, 'outExpo')
 end
 
 function love.update(dt)
@@ -62,10 +76,13 @@ function love.draw()
     message:draw()
   end
 
---  love.graphics.line(0, 256, 512, 256)
-  local b = love.math.newBezierCurve({256, 0, 0, 0, 256, 224})
-  love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
-  love.graphics.line(b:render())
+  if _debug then
+    love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+    for _, p in ipairs(_points) do
+      local b = love.math.newBezierCurve(convert_points(p))
+      love.graphics.line(b:render())
+      end
+  end
 
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
@@ -77,6 +94,9 @@ end
 
 function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
+    for _, message in ipairs(_messages) do
+      message:reset()
+    end
   elseif key == 'f2' then
   elseif key == 'f5' then
   elseif key == 'f6' then

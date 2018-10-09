@@ -41,6 +41,10 @@ function Message.new(text, font, color, points, duration, easing)
     }, Message)
 end
 
+function Message:reset()
+  self.path:seek(0)
+end
+
 function Message:update(dt)
   self.path:step(dt)
 end
