@@ -61,7 +61,7 @@ function love.load(args)
     math.random()
   end
 
-  _messages[#_messages + 1] = Message.new('aPPlEjAck', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  _points[1], 2.5, 'outBounce')
+  _messages[#_messages + 1] = Message.new('iCE:7', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  _points[1], 2.5, 'outBounce')
   _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, _points[2], 2.5, 'outExpo')
 end
 
