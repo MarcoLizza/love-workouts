@@ -29,6 +29,8 @@ local Message = require('message')
 
 local unpack = unpack or table.unpack
 
+local _time = 0
+local _shader = nil
 local _messages = {}
 local _debug = false
 
@@ -61,11 +63,18 @@ function love.load(args)
     math.random()
   end
 
+  _shader = love.graphics.newShader('assets/shaders/waves.glsl')
+  _shader:send('screen_resolution', { love.graphics.getDimensions() })
+
   _messages[#_messages + 1] = Message.new('iCE:7', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  _points[1], 2.5, 'outBounce')
   _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, _points[2], 2.5, 'outExpo')
 end
 
 function love.update(dt)
+  _time = _time + dt
+
+  _shader:send('time', _time)
+
   for _, message in ipairs(_messages) do
     message:update(dt)
   end
@@ -75,6 +84,12 @@ function love.draw()
   for _, message in ipairs(_messages) do
     message:draw()
   end
+
+  love.graphics.push('all')
+    love.graphics.setShader(_shader)
+    love.graphics.setColor(0.0, 1.0, 1.0, 1.0)
+    love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+  love.graphics.pop()
 
   if _debug then
     love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
