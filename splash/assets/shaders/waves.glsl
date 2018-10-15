@@ -21,7 +21,9 @@ float floating(float x)
 float horizon(float time)
 {
     float x = time * 0.125f;
-    return (floating(x * 4.0f) + 1.0) / 2.0;
+    float height = (sin(x) + 1.0) / 2.0;
+    float offset = floating(x * 8.0f) / 64.0;
+    return height + offset;
 }
 
 vec4 wave(float time, vec2 uv, vec4 color)
@@ -39,7 +41,7 @@ vec4 wave(float time, vec2 uv, vec4 color)
     if (uv.y > y) {
         return vec4(color.rgb, 0.125);
     } else {
-    	return vec4(0.0, 0.0, 0.0, 0.0);
+        return vec4(0.0, 0.0, 0.0, 0.0);
     }
 }
 
