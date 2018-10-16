@@ -28,16 +28,19 @@ Message.__index = Message
 
 local unpack = unpack or table.unpack
 
-function Message.new(text, font, color, points, duration, easing)
+function Message.new(text, font, color, sequence, looped)
   local path = Path.new()
-  path:push(points, duration, easing)
+  for _, part in ipairs(sequence) do
+    path:push(part.points, part.duration, part.easing)
+  end
   path:seek(0)
 
   return setmetatable({
       text = text,
       font = love.graphics.newFont(font.family, font.size),
       color = color,
-      path = path
+      path = path,
+      looped = looped
     }, Message)
 end
 
@@ -46,14 +49,19 @@ function Message:reset()
 end
 
 function Message:update(dt)
+  if self.path.finished and self.looped then
+    self.path:seek(0)
+  end
+
   self.path:step(dt)
 end
 
 function Message:draw()
   local x, y = unpack(self.path.position)
+--[[
   love.graphics.setColor(0, 1, 0)
   love.graphics.circle('fill', x, y, 2)
---[[
+]]--
   local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
   local x, y = x - w / 2, y - h / 2
 
@@ -63,7 +71,7 @@ function Message:draw()
     love.graphics.print(self.text, x, y)
     love.graphics.setColor(1.0, 0.0, 0.0)
     love.graphics.rectangle('line', x, y, w, h)
-  love.graphics.pop() ]]--
+  love.graphics.pop()
 end
 
 return Message

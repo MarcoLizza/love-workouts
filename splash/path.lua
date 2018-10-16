@@ -131,6 +131,7 @@ end
 
 function Path:step(dt)
   if self.finished then
+    -- TODO: auto-rewind here?
     return
   end
 

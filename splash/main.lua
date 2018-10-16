@@ -31,12 +31,14 @@ local unpack = unpack or table.unpack
 
 local _time = 0
 local _shader = nil
-local _messages = {}
+local _message = nil
 local _debug = false
 
-local _points = {
-  { { 256, 0 }, { 0, 0 }, { 256, 224 } },
-  { { 256, 512 }, { 0, 0 }, { 256, 270 } }
+local _sequence = {
+  { points = { {   0,   0 }, { 512,   0 }, { 256, 256 } }, duration = 2.5, easing = 'outCirc' },
+  { points = { { 256, 256 }, { 512,   0 }, { 512, 512 } }, duration = 5.0, easing = 'outQuad' },
+  { points = { { 512, 512 }, {   0, 512 }, { 256, 256 } }, duration = 2.5, easing = 'outSine' },
+  { points = { { 256, 256 }, {   0, 512 }, {   0,   0 } }, duration = 5.0, easing = 'outBack' }
 }
 
 local function convert_points(points)
@@ -66,8 +68,7 @@ function love.load(args)
   _shader = love.graphics.newShader('assets/shaders/waves.glsl')
   _shader:send('screen_resolution', { love.graphics.getDimensions() })
 
-  _messages[#_messages + 1] = Message.new('iCE:7', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  _points[1], 2.5, 'outBounce')
-  _messages[#_messages + 1] = Message.new('presents', { family = 'assets/fonts/m5x7.ttf', size = 32 },  { 1.0, 1.0, 1.0 }, _points[2], 2.5, 'outExpo')
+  _message = Message.new('LOGO', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  _sequence, 'looped')
 end
 
 function love.update(dt)
@@ -75,15 +76,11 @@ function love.update(dt)
 
   _shader:send('time', _time)
 
-  for _, message in ipairs(_messages) do
-    message:update(dt)
-  end
+  _message:update(dt)
 end
 
 function love.draw()
-  for _, message in ipairs(_messages) do
-    message:draw()
-  end
+  _message:draw()
 
   love.graphics.push('all')
     love.graphics.setShader(_shader)
@@ -93,15 +90,14 @@ function love.draw()
 
   if _debug then
     love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
-    for _, p in ipairs(_points) do
-      local b = love.math.newBezierCurve(convert_points(p))
+    for _, p in ipairs(_sequence) do
+      local b = love.math.newBezierCurve(convert_points(p.points))
       love.graphics.line(b:render())
       end
   end
 
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
-  love.graphics.print(string.format('%d objects(s)', #_messages), 0, 16)
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
@@ -109,9 +105,7 @@ end
 
 function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
-    for _, message in ipairs(_messages) do
-      message:reset()
-    end
+    _message:reset()
   elseif key == 'f2' then
   elseif key == 'f5' then
   elseif key == 'f6' then
