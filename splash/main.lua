@@ -66,7 +66,6 @@ function love.load(args)
   end
 
   _shader = love.graphics.newShader('assets/shaders/waves.glsl')
-  _shader:send('screen_resolution', { love.graphics.getDimensions() })
 
   _message = Message.new('LOGO', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  _sequence, 'looped')
 end

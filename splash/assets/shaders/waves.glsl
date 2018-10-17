@@ -46,10 +46,9 @@ vec4 wave(float time, vec2 uv, vec4 color)
 }
 
 extern float time;
-extern vec2 screen_resolution;
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
 {
-    vec2 uv = screen_coords / screen_resolution; // vec2(love_ScreenSize)
+    vec2 uv = screen_coords / vec2(love_ScreenSize);
     return wave(time, uv, color);
 }
