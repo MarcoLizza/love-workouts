@@ -23,8 +23,6 @@ freely, subject to the following restrictions:
 -- TODO: apply shader or color
 -- TODO: https://gamedevelopment.tutsplus.com/tutorials/create-a-glowing-flowing-lava-river-using-bezier-curves-and-shaders--gamedev-919
 
--- https://javascript.info/bezier-curve
-
 local Message = require('message')
 
 local unpack = unpack or table.unpack
@@ -40,15 +38,6 @@ local _sequence = {
   { points = { { 512, 512 }, {   0, 512 }, { 256, 256 } }, duration = 2.5, easing = 'outSine' },
   { points = { { 256, 256 }, {   0, 512 }, {   0,   0 } }, duration = 5.0, easing = 'outBack' }
 }
-
-local function convert_points(points)
-  local sequence = {}
-  for _, point in ipairs(points) do
-    sequence[#sequence + 1] = point[1]
-    sequence[#sequence + 1] = point[2]
-  end
-  return sequence
-end
 
 function love.load(args)
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
@@ -79,21 +68,13 @@ function love.update(dt)
 end
 
 function love.draw()
-  _message:draw()
+  _message:draw(_debug)
 
   love.graphics.push('all')
     love.graphics.setShader(_shader)
     love.graphics.setColor(0.0, 1.0, 1.0, 1.0)
     love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
   love.graphics.pop()
-
-  if _debug then
-    love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
-    for _, p in ipairs(_sequence) do
-      local b = love.math.newBezierCurve(convert_points(p.points))
-      love.graphics.line(b:render())
-      end
-  end
 
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)

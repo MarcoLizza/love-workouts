@@ -31,7 +31,7 @@ local unpack = unpack or table.unpack
 function Message.new(text, font, color, sequence, looped)
   local path = Path.new()
   for _, part in ipairs(sequence) do
-    path:push(part.points, part.duration, part.easing)
+    path:push(part.duration, part.easing, part.points, part.limits)
   end
   path:seek(0)
 
@@ -56,7 +56,25 @@ function Message:update(dt)
   self.path:step(dt)
 end
 
-function Message:draw()
+function Message:draw(debug)
+  if debug then
+    local function convert_points(points)
+      local sequence = {}
+      for _, point in ipairs(points) do
+        sequence[#sequence + 1] = point[1]
+        sequence[#sequence + 1] = point[2]
+      end
+      return sequence
+    end
+    love.graphics.push('all')
+    love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+    for _, segment in ipairs(self.path.segments) do
+      local b = love.math.newBezierCurve(convert_points(segment.control_points))
+      love.graphics.line(b:render())
+    end
+    love.graphics.pop()
+  end
+
   local x, y = unpack(self.path.position)
 --[[
   love.graphics.setColor(0, 1, 0)
