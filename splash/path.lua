@@ -28,6 +28,8 @@ Path.__index = Path
 
 local unpack = unpack or table.unpack
 
+local CURVE_ORDER_LIMIT = 4
+
 -- The function *compiles* a bézier curve evaluator, given the control points
 -- (as two-element arrays). The aim of this function is to avoid passing the
 -- control-control_points at each evaluation.
@@ -38,6 +40,8 @@ local unpack = unpack or table.unpack
 -- B1(p0, p1, t) = u*p0 + t*p1
 -- B2(p0, p1, p2, t) = u*u*p0 + 2*t*u*p1 + t*t*p2
 -- B3(p0, p1, p2, p3, t) = u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3
+--
+-- https://javascript.info/bezier-curve
 local function compile_bezier(control_points)
   local n = #control_points
   if n == 4 then
@@ -83,7 +87,7 @@ local function compile_bezier(control_points)
         return x, y
       end
   else
-    error('Bézier curves are supported up to 4th order.')
+    error('Bézier curves are supported from 2nd to 4th order.')
   end
 end
 
@@ -105,13 +109,37 @@ function Path:clear()
   self.finished = false
 end
 
-function Path:push(control_points, duration, easing)
-  self.segments[#self.segments + 1] = {
-      -- control_points = control_points,
-      duration = duration,
-      easing = Easings[easing or 'linear'],
-      bezier = compile_bezier(control_points)
-    }
+-- Scans the control-points sequence by creating sub-sequences no longer than
+-- the limit defined in the sequence of limits. Also, the last point of a
+-- sub-sequence is the first point of the following one.
+local function split(points, limits, callback)
+  local n = #points
+  local from = 1
+  for _, limit in ipairs(limits) do
+    local count = math.min(limit, n)
+    local to = from + (count - 1)
+    local control_points = {}
+    for i = from, to do
+      control_points[#control_points + 1] = points[i]
+    end
+    callback(control_points)
+    n = n - (count - 1)
+    from = to
+  end
+end
+
+function Path:push(duration, easing, points, limits)
+  if not limits then
+    limits = { CURVE_ORDER_LIMIT }
+  end
+  split(points, limits, function(control_points)
+      self.segments[#self.segments + 1] = {
+        control_points = control_points,
+        duration = duration,
+        easing = Easings[easing],
+        bezier = compile_bezier(control_points)
+      }
+    end)
 end
 
 function Path:seek(time)
