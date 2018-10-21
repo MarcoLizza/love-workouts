@@ -79,8 +79,6 @@ function love.update(dt)
 end
 
 function love.draw()
-  _message:draw()
-
   love.graphics.push('all')
     love.graphics.setShader(_shader)
     love.graphics.setColor(0.0, 1.0, 1.0, 1.0)
@@ -94,6 +92,8 @@ function love.draw()
       love.graphics.line(b:render())
       end
   end
+
+  _message:draw()
 
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
