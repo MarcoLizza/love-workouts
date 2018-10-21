@@ -37,7 +37,13 @@ vec4 wave(float time, vec2 uv, vec4 color)
     }
 
     y += horizon(time);
-
+/*
+    float ratio = abs(uv.y - y) / 0.05f;
+    if (ratio > 1) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+    }
+    return mix(vec4(0.0, 1.0, 1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), ratio);
+*/
     if (uv.y > y) {
         return vec4(color.rgb, 0.125);
     } else {
