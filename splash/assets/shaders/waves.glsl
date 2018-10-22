@@ -6,6 +6,15 @@ const float[] OFFSETS = float[]( 0.0f, 0.0f, 0.0f );
 const float[] STRETCHES = float[]( 7.00f, 9.00f, 5.00f );
 const float[] SPEEDS = float[]( 5.00f, 7.00f, 3.00f );
 
+const vec4[] GRADIENTS = vec4[](
+        vec4(1.0, 0.0, 0.0, 1.0),
+        vec4(1.0, 1.0, 0.0, 1.0),
+        vec4(0.0, 1.0, 1.0, 1.0),
+        vec4(0.0, 0.0, 1.0, 1.0),
+        vec4(1.0, 0.0, 1.0, 1.0),
+        vec4(1.0, 1.0, 1.0, 1.0)
+    );
+
 const int WAVES = 3;
 
 float sine(float x, float a, float b)
@@ -37,18 +46,25 @@ vec4 wave(float time, vec2 uv, vec4 color)
     }
 
     y += horizon(time);
+
+    float delta = uv.y - y;
+    float value = abs(delta) * 5.0;
+    int from = int(value);
+    int to = from + 1;
+    return mix(GRADIENTS[from], GRADIENTS[to], value - from);
 /*
     float ratio = abs(uv.y - y) / 0.05f;
     if (ratio > 1) {
         return vec4(0.0, 0.0, 0.0, 0.0);
     }
     return mix(vec4(0.0, 1.0, 1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), ratio);
-*/
+
     if (uv.y > y) {
         return vec4(color.rgb, 0.125);
     } else {
         return vec4(0.0, 0.0, 0.0, 0.0);
     }
+*/
 }
 
 extern float time;
