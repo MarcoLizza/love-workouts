@@ -74,17 +74,11 @@ function love.draw()
     love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
   love.graphics.pop()
 
-  if _debug then
-    love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
-    for _, p in ipairs(_sequence) do
-      local b = love.math.newBezierCurve(convert_points(p.points))
-      love.graphics.line(b:render())
-      end
-  end
+  _message:draw(_debug)
 
-  _message:draw()
-
-  love.graphics.setColor(1.0, 1.0, 1.0)
+--  love.graphics.setColor(0.0, 0.0, 0.0, 0.5)
+--  love.graphics.rectangle('fill', 0, 0, 64, 14)
+  love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
 end
 
