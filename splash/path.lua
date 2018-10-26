@@ -91,22 +91,14 @@ local function compile_bezier(control_points)
   end
 end
 
-function Path.new()
+function Path.new(on_finished)
   return setmetatable({
       segments = {},
       index = nil,
       time = 0,
       position = nil,
-      finished = false
+      on_finished = on_finished
     }, Path)
-end
-
-function Path:clear()
-  self.segments = {}
-  self.index = nil
-  self.time = 0
-  self.position = nil
-  self.finished = false
 end
 
 -- Scans the control-points sequence by creating sub-sequences no longer than
@@ -153,33 +145,33 @@ function Path:seek(time)
     end
     time = time - segment.duration
   end
-  self.finished = not self.index
   self:step(time)
 end
 
 function Path:step(dt)
-  if self.finished then
-    -- TODO: auto-rewind here?
+  if not self.index then
     return
   end
 
-  self.time = self.time + dt
   local current = self.segments[self.index]
+
+  self.time = self.time + dt
   while self.time > current.duration do
     self.time = self.time - current.duration
     self.index = self.index + 1
-    if self.index > #self.segments then
-      current = nil
+    if self.index > #self.segments then -- End of path, cap the very end of the last segment.
+      self.time = current.duration
+      self.index = nil
       break
     end
     current = self.segments[self.index]
   end
 
-  if current then
-    local t = current.easing(self.time, 0, 1, current.duration)
-    self.position = { current.bezier(t) }
-  else
-    self.finished = true
+  local t = current.easing(self.time, 0, 1, current.duration)
+  self.position = { current.bezier(t) }
+
+  if not self.index and self.on_finished then -- Reached the end of the segment, notify the callback.
+    self:on_finished()
   end
 end
 

@@ -29,7 +29,11 @@ Message.__index = Message
 local unpack = unpack or table.unpack
 
 function Message.new(text, font, color, sequence, looped)
-  local path = Path.new()
+  local path = Path.new(function(self)
+        if looped then
+          self:seek(0)
+        end
+      end)
   for _, part in ipairs(sequence) do
     path:push(part.duration, part.easing, part.points, part.limits)
   end
@@ -49,10 +53,6 @@ function Message:reset()
 end
 
 function Message:update(dt)
-  if self.path.finished and self.looped then
-    self.path:seek(0)
-  end
-
   self.path:step(dt)
 end
 
@@ -81,7 +81,7 @@ function Message:draw(debug)
   love.graphics.circle('fill', x, y, 2)
 ]]--
   local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
-  local x, y = x - w / 2, y - h / 2
+  x, y = x - w / 2, y - h / 2
 
   love.graphics.push('all')
     love.graphics.setFont(self.font)
