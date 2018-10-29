@@ -84,18 +84,18 @@ function Message:draw(debug)
     love.graphics.pop()
   end
 
-  local ox, oy = unpack(self.path.position)
+  local x, y = unpack(self.path.position)
 --[[
   love.graphics.setColor(0, 1, 0)
   love.graphics.circle('fill', x, y, 2)
 ]]--
   local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
-  local x, y = ox - w / 2, oy - h / 2
+  x, y = x - w / 2, y - h / 2
 
   love.graphics.push('all')
     love.graphics.setFont(self.font)
     if self.shader then
-      self.shader:send('_origin', { ox, oy })
+      self.shader:send('_origin', { x, y })
       self.shader:send('_size', { w, h })
       love.graphics.setShader(self.shader)
     end

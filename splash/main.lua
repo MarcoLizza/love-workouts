@@ -57,14 +57,14 @@ function love.load(args)
   _shader = love.graphics.newShader('assets/shaders/waves.glsl')
 
   local shader = [[
-    extern vec2 _origin;
-    extern vec2 _size;
+    uniform vec2 _origin;
+    uniform vec2 _size;
     vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
     {
         vec4 pixel = texture2D(texture, texture_coords);
         if (pixel.a != 0) {
           vec2 uv = (screen_coords - _origin) / _size;
-          return mix(vec4(1.0, 0.0, 0.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), uv.y);
+          return vec4(mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), uv.y), pixel.a);
         }
         discard;
     }
