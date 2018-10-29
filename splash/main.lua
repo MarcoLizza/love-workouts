@@ -62,7 +62,7 @@ end
 function love.update(dt)
   _time = _time + dt
 
-  _shader:send('time', _time)
+  _shader:send('_time', _time)
 
   _message:update(dt)
 end
