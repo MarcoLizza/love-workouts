@@ -47,7 +47,7 @@ vec4 wave(int mode, float time, vec2 uv, vec4 color)
 
     y += horizon(time);
 
-    if (mode == 3) {
+    if (mode == 3) { // Vertical split.
         mode = int(uv.x * 3.0);
     }
 
@@ -66,9 +66,9 @@ vec4 wave(int mode, float time, vec2 uv, vec4 color)
         return mix(vec4(0.0, 1.0, 1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), ratio);
     } else {
         if (uv.y > y) {
-            return vec4(color.rgb, 0.125);
+            return vec4(color.rgb, 0.5);
         } else {
-            return vec4(0.0, 0.0, 0.0, 0.0);
+            return vec4(color.rgb, 0.125);
         }
     }
 }

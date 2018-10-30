@@ -74,7 +74,7 @@ end
 
 function love.draw()
   love.graphics.push('all')
---    _shader:send('_mode', _mode)
+    _shader:send('_mode', _mode)
     love.graphics.setShader(_shader)
     love.graphics.setColor(0.0, 1.0, 1.0, 1.0)
     love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
