@@ -61,6 +61,10 @@ function Message:reset()
   self.path:seek(0)
 end
 
+function Message:format(format, ...)
+  self.text = string.format(format, ...)
+end
+
 function Message:update(dt)
   self.path:step(dt)
 end
@@ -75,6 +79,7 @@ function Message:draw(debug)
       end
       return sequence
     end
+
     love.graphics.push('all')
     love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
     for _, segment in ipairs(self.path.segments) do
@@ -84,16 +89,13 @@ function Message:draw(debug)
     love.graphics.pop()
   end
 
-  local x, y = unpack(self.path.position)
---[[
-  love.graphics.setColor(0, 1, 0)
-  love.graphics.circle('fill', x, y, 2)
-]]--
-  local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
-  x, y = x - w / 2, y - h / 2
-
   love.graphics.push('all')
     love.graphics.setFont(self.font)
+
+    local x, y = unpack(self.path.position)
+    local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
+    x, y = x - w / 2, y - h / 2
+
     if self.shader then
       self.shader:send('_origin', { x, y })
       self.shader:send('_size', { w, h })
@@ -105,11 +107,14 @@ function Message:draw(debug)
       love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
     end
     love.graphics.print(self.text, x, y)
-    if debug then
-      love.graphics.setColor(1.0, 0.0, 0.0)
-      love.graphics.rectangle('line', x, y, w, h)
-    end
   love.graphics.pop()
+
+  if debug then
+    love.graphics.push('all')
+      love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+      love.graphics.rectangle('line', x, y, w, h)
+    love.graphics.pop()
+  end
 end
 
 return Message

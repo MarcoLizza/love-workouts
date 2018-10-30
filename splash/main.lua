@@ -20,7 +20,6 @@ freely, subject to the following restrictions:
 
 ]] --
 
--- TODO: apply shader or color
 -- TODO: https://gamedevelopment.tutsplus.com/tutorials/create-a-glowing-flowing-lava-river-using-bezier-curves-and-shaders--gamedev-919
 
 local Message = require('message')
@@ -28,6 +27,7 @@ local Message = require('message')
 local unpack = unpack or table.unpack
 
 local _time = 0
+local _mode = 3
 local _shader = nil
 local _message = nil
 local _debug = false
@@ -55,23 +55,12 @@ function love.load(args)
   end
 
   _shader = love.graphics.newShader('assets/shaders/waves.glsl')
+--  _shader = love.graphics.newShader('assets/shaders/freeload.glsl')
 
-  local shader = [[
-    uniform vec2 _origin;
-    uniform vec2 _size;
-    vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
-    {
-        vec4 pixel = texture2D(texture, texture_coords);
-        if (pixel.a != 0) {
-          vec2 uv = (screen_coords - _origin) / _size;
-          return vec4(mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), uv.y), pixel.a);
-        }
-        discard;
-    }
-  ]]
+  local shader = 'assets/shaders/gradients.glsl'
   local color = { 1.0, 1.0, 1.0 }
 
-  _message = Message.new('LOGO', { family = 'assets/fonts/m6x11.ttf', size = 64 }, shader, _sequence, 'looped')
+  _message = Message.new('LOGO', { family = 'assets/fonts/8bit_wonder-8px.ttf', size = 48 }, shader, _sequence, 'looped')
 end
 
 function love.update(dt)
@@ -80,10 +69,12 @@ function love.update(dt)
   _shader:send('_time', _time)
 
   _message:update(dt)
+  _message:format('COUNT %03d', math.floor(_time))
 end
 
 function love.draw()
   love.graphics.push('all')
+--    _shader:send('_mode', _mode)
     love.graphics.setShader(_shader)
     love.graphics.setColor(0.0, 1.0, 1.0, 1.0)
     love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
@@ -104,6 +95,7 @@ function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
     _message:reset()
   elseif key == 'f2' then
+    _mode =(_mode + 1) % 4
   elseif key == 'f5' then
   elseif key == 'f6' then
   elseif key == 'f12' then

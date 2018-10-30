@@ -35,7 +35,7 @@ float horizon(float time)
     return height + offset;
 }
 
-vec4 wave(float time, vec2 uv, vec4 color)
+vec4 wave(int mode, float time, vec2 uv, vec4 color)
 {
     float y = 0.0;
 
@@ -47,30 +47,37 @@ vec4 wave(float time, vec2 uv, vec4 color)
 
     y += horizon(time);
 
-    float delta = uv.y - y;
-    float value = abs(delta) * 5.0;
-    int from = int(value);
-    int to = from + 1;
-    return mix(GRADIENTS[from], GRADIENTS[to], value - from);
-/*
-    float ratio = abs(uv.y - y) / 0.05f;
-    if (ratio > 1) {
-        return vec4(0.0, 0.0, 0.0, 0.0);
+    if (mode == 3) {
+        mode = int(uv.x * 3.0);
     }
-    return mix(vec4(0.0, 1.0, 1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), ratio);
 
-    if (uv.y > y) {
-        return vec4(color.rgb, 0.125);
+    if (mode == 0) {
+        float delta = uv.y - y;
+        float value = abs(delta) * 5.0;
+        int from = int(value);
+        int to = from + 1;
+        return mix(GRADIENTS[from], GRADIENTS[to], value - from);
+    } else
+    if (mode == 1) {
+        float ratio = abs(uv.y - y) / 0.05f;
+        if (ratio > 1) {
+            return vec4(0.0, 0.0, 0.0, 0.0);
+        }
+        return mix(vec4(0.0, 1.0, 1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), ratio);
     } else {
-        return vec4(0.0, 0.0, 0.0, 0.0);
+        if (uv.y > y) {
+            return vec4(color.rgb, 0.125);
+        } else {
+            return vec4(0.0, 0.0, 0.0, 0.0);
+        }
     }
-*/
 }
 
-extern float _time;
+uniform int _mode;
+uniform float _time;
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
 {
     vec2 uv = screen_coords / vec2(love_ScreenSize);
-    return wave(_time, uv, color);
+    return wave(_mode, _time, uv, color);
 }
