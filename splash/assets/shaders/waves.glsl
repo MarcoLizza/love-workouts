@@ -17,6 +17,13 @@ const vec4[] GRADIENTS = vec4[](
 
 const int WAVES = 3;
 
+const int MODE_WAVES = 0;
+const int MODE_WATER = 1;
+const int MODE_BAR = 2;
+const int MODES = 3;
+
+const float BAR_HEIGHT = 0.05f;
+
 float sine(float x, float a, float b)
 {
     return sin(a * x) * cos(b * x);
@@ -38,46 +45,43 @@ float horizon(float time)
 vec4 wave(int mode, float time, vec2 uv, vec4 color)
 {
     float y = 0.0;
-
     for (int i = 0; i < WAVES; ++i) {
         y += HEIGHTS[i] +
             AMPLITUDES[i] *
             sin(OFFSETS[i] + uv.x * STRETCHES[i] + time * SPEEDS[i]);
     }
-
     y += horizon(time);
 
-    if (mode == 3) { // Vertical split.
-        mode = int(uv.x * 3.0);
-    }
-
-    if (mode == 0) {
-        float delta = uv.y - y;
-        float value = abs(delta) * 5.0;
+    if (mode == MODE_WAVES) {
+        float value = abs(uv.y - y) * (GRADIENTS.length() - 1);
         int from = int(value);
         int to = from + 1;
         return mix(GRADIENTS[from], GRADIENTS[to], value - from);
     } else
-    if (mode == 1) {
-        float ratio = abs(uv.y - y) / 0.05f;
+    if (mode == MODE_WATER) {
+        if (uv.y > y) {
+            return vec4(0.0, 1.0, 1.0, 1.0);
+        } else {
+            return vec4(1.0, 0.0, 1.0, 1.0);
+        }
+    } else
+    if (mode == MODE_BAR) {
+        float ratio = abs(uv.y - y) / BAR_HEIGHT;
         if (ratio > 1) {
             return vec4(0.0, 0.0, 0.0, 0.0);
         }
         return mix(vec4(0.0, 1.0, 1.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), ratio);
-    } else {
-        if (uv.y > y) {
-            return vec4(color.rgb, 0.5);
-        } else {
-            return vec4(color.rgb, 0.125);
-        }
     }
 }
 
-uniform int _mode;
+uniform int _mode = MODES;
 uniform float _time;
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
 {
     vec2 uv = screen_coords / vec2(love_ScreenSize);
-    return wave(_mode, _time, uv, color);
+
+    int mode = _mode >= MODES ? int(uv.x * MODES) : _mode;
+
+    return wave(mode, _time, uv, color);
 }
