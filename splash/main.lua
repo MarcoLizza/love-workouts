@@ -20,7 +20,6 @@ freely, subject to the following restrictions:
 
 ]] --
 
--- TODO: apply shader or color
 -- TODO: https://gamedevelopment.tutsplus.com/tutorials/create-a-glowing-flowing-lava-river-using-bezier-curves-and-shaders--gamedev-919
 
 local Message = require('message')
@@ -28,15 +27,18 @@ local Message = require('message')
 local unpack = unpack or table.unpack
 
 local _time = 0
+local _mode = 3
 local _shader = nil
 local _message = nil
 local _debug = false
 
+local MARGIN = 64
+
 local _sequence = {
-  { points = { {   0,   0 }, { 512,   0 }, { 256, 256 } }, duration = 2.5, easing = 'outCirc' },
-  { points = { { 256, 256 }, { 512,   0 }, { 512, 512 } }, duration = 5.0, easing = 'outQuad' },
-  { points = { { 512, 512 }, {   0, 512 }, { 256, 256 } }, duration = 2.5, easing = 'outSine' },
-  { points = { { 256, 256 }, {   0, 512 }, {   0,   0 } }, duration = 5.0, easing = 'outBack' }
+  { points = { {   0 + MARGIN,   0 + MARGIN }, { 512 - MARGIN,   0 + MARGIN }, { 256, 256 } }, duration = 2.5, easing = 'outCirc' },
+  { points = { { 256, 256 }, { 512 - MARGIN,   0 }, { 512 - MARGIN, 512 - MARGIN } }, duration = 5.0, easing = 'outQuad' },
+  { points = { { 512 - MARGIN, 512 - MARGIN }, {   0 + MARGIN, 512 - MARGIN }, { 256, 256 } }, duration = 2.5, easing = 'outSine' },
+  { points = { { 256, 256 }, {   0 + MARGIN, 512 - MARGIN }, {   0 + MARGIN,   0 + MARGIN } }, duration = 5.0, easing = 'outBack' }
 }
 
 function love.load(args)
@@ -55,29 +57,33 @@ function love.load(args)
   end
 
   _shader = love.graphics.newShader('assets/shaders/waves.glsl')
+--  _shader = love.graphics.newShader('assets/shaders/freeload.glsl')
 
-  _message = Message.new('LOGO', { family = 'assets/fonts/m6x11.ttf', size = 64 },  { 1.0, 1.0, 1.0 },  _sequence, 'looped')
+  local shader = 'assets/shaders/gradients.glsl'
+  local color = { 1.0, 1.0, 1.0 }
+
+  _message = Message.new('XYZ', { family = 'assets/fonts/8bit_wonder-8px.ttf', size = 48 }, shader, _sequence, 'looped')
 end
 
 function love.update(dt)
   _time = _time + dt
 
-  _shader:send('time', _time)
+  _shader:send('_time', _time)
 
   _message:update(dt)
+  _message:format('%03d', math.floor(_time))
 end
 
 function love.draw()
   love.graphics.push('all')
+    _shader:send('_mode', _mode)
     love.graphics.setShader(_shader)
-    love.graphics.setColor(0.0, 1.0, 1.0, 1.0)
+    love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
     love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
   love.graphics.pop()
 
   _message:draw(_debug)
 
---  love.graphics.setColor(0.0, 0.0, 0.0, 0.5)
---  love.graphics.rectangle('fill', 0, 0, 64, 14)
   love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
 end
@@ -89,8 +95,7 @@ function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
     _message:reset()
   elseif key == 'f2' then
-  elseif key == 'f5' then
-  elseif key == 'f6' then
+    _mode =(_mode + 1) % 4
   elseif key == 'f12' then
     _debug = not _debug
   end

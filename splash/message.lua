@@ -28,7 +28,7 @@ Message.__index = Message
 
 local unpack = unpack or table.unpack
 
-function Message.new(text, font, color, sequence, looped)
+function Message.new(text, font, colorOrShader, sequence, looped)
   local path = Path.new(function(self)
         if looped then
           self:seek(0)
@@ -39,10 +39,19 @@ function Message.new(text, font, color, sequence, looped)
   end
   path:seek(0)
 
+  local color = nil
+  local shader = nil
+  if type(colorOrShader) == 'string' then
+    shader = love.graphics.newShader(colorOrShader)
+  else
+    color = colorOrShader
+  end
+
   return setmetatable({
       text = text,
       font = love.graphics.newFont(font.family, font.size),
       color = color,
+      shader = shader,
       path = path,
       looped = looped
     }, Message)
@@ -50,6 +59,10 @@ end
 
 function Message:reset()
   self.path:seek(0)
+end
+
+function Message:format(format, ...)
+  self.text = string.format(format, ...)
 end
 
 function Message:update(dt)
@@ -66,6 +79,7 @@ function Message:draw(debug)
       end
       return sequence
     end
+
     love.graphics.push('all')
     love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
     for _, segment in ipairs(self.path.segments) do
@@ -75,21 +89,32 @@ function Message:draw(debug)
     love.graphics.pop()
   end
 
-  local x, y = unpack(self.path.position)
---[[
-  love.graphics.setColor(0, 1, 0)
-  love.graphics.circle('fill', x, y, 2)
-]]--
-  local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
-  x, y = x - w / 2, y - h / 2
-
   love.graphics.push('all')
     love.graphics.setFont(self.font)
-    love.graphics.setColor(unpack(self.color))
+
+    local x, y = unpack(self.path.position)
+    local w, h = self.font:getWidth(self.text), self.font:getHeight(self.text)
+    x, y = x - w / 2, y - h / 2
+
+    if self.shader then
+      self.shader:send('_origin', { x, y })
+      self.shader:send('_size', { w, h })
+      love.graphics.setShader(self.shader)
+    end
+    if self.color then
+      love.graphics.setColor(unpack(self.color))
+    else
+      love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+    end
     love.graphics.print(self.text, x, y)
-    love.graphics.setColor(1.0, 0.0, 0.0)
-    love.graphics.rectangle('line', x, y, w, h)
   love.graphics.pop()
+
+  if debug then
+    love.graphics.push('all')
+      love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+      love.graphics.rectangle('line', x, y, w, h)
+    love.graphics.pop()
+  end
 end
 
 return Message
