@@ -69,7 +69,13 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
     // Compute the x offset, basing of the depth map pixel (which is a black-and-white
     // image with back as "no offset" and white as "max offset").
     float factor = depth.r;
+
+    // http://www.david-romeuf.fr/3D/Anaglyphes/MontageFenetreVolume/AnaglyphAssemblyWindowsVolume.html
+    factor -= 0.5;
+    factor *= -2.0;
+
     float offset = factor * _offset;
+
     // Alse the distance from the vanishing point should be used control the offset.
     vec2 xy = screen_coords / vec2(love_ScreenSize);
     offset *= distance(xy, _vanishing_point) * DISTANCE_MULTIPLIER;
