@@ -20,19 +20,27 @@ freely, subject to the following restrictions:
 
 ]] --
 
-local MODES = { 'grey', 'color', 'halfcolor', 'optimized' }
-
+local MODES = {
+  'RED-BLUE GREY', 'RED-GREEN GREY', 'BLUE-GREEN GREY',
+  'RED-CYAN GREY', 'RED-CYAN COLOR', 'RED-CYAN HALF-COLOR', 'RED-CYAN DUBOIS',
+  'AMBER-BLUE GREY', 'AMBER-BLUE COLOR', 'AMBER-BLUE HALF-COLOR (ColorCode-3D)', 'AMBER-BLUE DUBOIS',
+  'MAGENTA-GREEN GREY', 'MAGENTA-GREEN COLOR', 'MAGENTA-GREEN HALF-COLOR (Trioscopics-3D)', 'MAGENTA-GREEN DUBOIS',
+  'MAGENTA-YELLOW COLOR *', 'MAGENTA-CYAN COLOR *', 'YELLOW-CYAN COLOR *'
+}
 local unpack = unpack or table.unpack
 
 local _time = 0
 local _debug = false
 
+local _font = nil
+
 local _shader = nil
-local _image = nil
-local _depth_map = nil
-local _offset = 0.0125
+local _images = {
+    ['left'] = 0,
+    ['center'] = 0,
+    ['right'] = 0
+  }
 local _mode = 0
-local _vanishing_point = { 0.5, 0.5 }
 
 function love.load(args)
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
@@ -49,10 +57,13 @@ function love.load(args)
     math.random()
   end
 
-  _depth_map = love.graphics.newImage('data/depth-map.png')
-  _image = love.graphics.newImage('data/image.png')
+  _font = love.graphics.newFont('assets/fonts/m6x11.ttf', 32)
 
   _shader = love.graphics.newShader('assets/shaders/anaglyph.glsl')
+
+  for key, _ in pairs(_images) do
+    _images[key] = love.graphics.newImage('data/' .. key .. '.png')
+  end
 end
 
 function love.update(dt)
@@ -61,32 +72,30 @@ end
 
 function love.draw()
   love.graphics.push('all')
-    _shader:send('_depth_map', _depth_map)
-    _shader:send('_offset', _offset)
+    _shader:send('_left', _images['left'])
+    _shader:send('_right', _images['right'])
     _shader:send('_mode', _mode)
-    _shader:send('_vanishing_point', _vanishing_point)
     love.graphics.setShader(_shader)
     love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
---    love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
-    love.graphics.draw(_image)
+    love.graphics.draw(_images['center'])
+  love.graphics.pop()
+
+  love.graphics.push('all')
+    love.graphics.setFont(_font)
+    love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+    love.graphics.print(MODES[_mode + 1], 0, love.graphics.getHeight() - 32)
   love.graphics.pop()
 
   love.graphics.setColor(0.0, 0.0, 0.0, 0.5)
   love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
-  love.graphics.print(string.format('mode %s, offset %.4f, vanishing-point <%.2f, %.2f>', MODES[_mode + 1], _offset, _vanishing_point[1], _vanishing_point[2]), 0, 16)
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
-  _vanishing_point = { x / love.graphics.getWidth(), y / love.graphics.getHeight() }
 end
 
 function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
     _mode = (_mode + 1) % #MODES
-  elseif key == 'f2' then
-    _offset = _offset - 0.0005
-  elseif key == 'f3' then
-    _offset = _offset + 0.0005
   elseif key == 'f12' then
     _debug = not _debug
   end
