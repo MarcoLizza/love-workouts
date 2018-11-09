@@ -20,13 +20,18 @@ freely, subject to the following restrictions:
 
 ]] --
 
-local MODES = {
+local ANAGLYPH_MODES = {
   'RED-BLUE GREY', 'RED-GREEN GREY', 'BLUE-GREEN GREY',
   'RED-CYAN GREY', 'RED-CYAN COLOR', 'RED-CYAN HALF-COLOR', 'RED-CYAN DUBOIS',
   'AMBER-BLUE GREY', 'AMBER-BLUE COLOR', 'AMBER-BLUE HALF-COLOR (ColorCode-3D)', 'AMBER-BLUE DUBOIS',
   'MAGENTA-GREEN GREY', 'MAGENTA-GREEN COLOR', 'MAGENTA-GREEN HALF-COLOR (Trioscopics-3D)', 'MAGENTA-GREEN DUBOIS',
   'MAGENTA-YELLOW COLOR *', 'MAGENTA-CYAN COLOR *', 'YELLOW-CYAN COLOR *'
 }
+
+local COLOUR_BLINDNESS_TYPES = {
+  'NORMAL', 'PROTANOPE (NO REDS)', 'DEUTERANOPE (NO GREENS)', 'TRITANOPE (NO BLUES)', 'ACHROMATOPSIA', 'BLUE-CONE MONOCHROMACY'
+}
+
 local unpack = unpack or table.unpack
 
 local _time = 0
@@ -41,6 +46,9 @@ local _images = {
     ['right'] = 0
   }
 local _mode = 0
+
+local _filter = nil
+local _type = 0
 
 function love.load(args)
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
@@ -61,6 +69,8 @@ function love.load(args)
 
   _shader = love.graphics.newShader('assets/shaders/anaglyph.glsl')
 
+  _filter = love.graphics.newShader('assets/shaders/colour-blindness.glsl')
+
   for key, _ in pairs(_images) do
     _images[key] = love.graphics.newImage('data/' .. key .. '.png')
   end
@@ -71,6 +81,7 @@ function love.update(dt)
 end
 
 function love.draw()
+--[[
   love.graphics.push('all')
     _shader:send('_left', _images['left'])
     _shader:send('_right', _images['right'])
@@ -79,11 +90,19 @@ function love.draw()
     love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
     love.graphics.draw(_images['center'])
   love.graphics.pop()
+]]--
+  love.graphics.push('all')
+    _filter:send('_type', _type)
+    love.graphics.setShader(_filter)
+    love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+    love.graphics.draw(_images['center'])
+  love.graphics.pop()
 
   love.graphics.push('all')
     love.graphics.setFont(_font)
     love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
-    love.graphics.print(MODES[_mode + 1], 0, love.graphics.getHeight() - 32)
+    love.graphics.print(ANAGLYPH_MODES[_mode + 1], 0, love.graphics.getHeight() - 64)
+    love.graphics.print(COLOUR_BLINDNESS_TYPES[_type + 1], 0, love.graphics.getHeight() - 32)
   love.graphics.pop()
 
   love.graphics.setColor(0.0, 0.0, 0.0, 0.5)
@@ -95,7 +114,9 @@ end
 
 function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
-    _mode = (_mode + 1) % #MODES
+    _mode = (_mode + 1) % #ANAGLYPH_MODES
+  elseif key == 'f2' then
+    _type = (_type + 1) % #COLOUR_BLINDNESS_TYPES
   elseif key == 'f12' then
     _debug = not _debug
   end

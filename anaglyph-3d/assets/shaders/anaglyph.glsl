@@ -3,12 +3,19 @@ uniform Image _right;
 uniform int _mode = 0;
 
 // Intro, why binocular 3d perception works on retinal disparity.
+// https://en.wikipedia.org/wiki/Anaglyph_3D
+// http://www.david-romeuf.fr/3D/Anaglyphes/MontageFenetreVolume/AnaglyphAssemblyWindowsVolume.html
 // http://courses.washington.edu/psy333/lecture_pdfs/Week7_Day3.pdf
+// https://blog.spoongraphics.co.uk/tutorials/how-to-create-anaglyph-3d-images-that-really-work
 
 // The greater the disparity, the closer the objects. This is easily seen in parallax scrolling.
 
 // http://3dtv.at/Knowhow/AnaglyphComparison_en.aspx
 // https://www.dpreview.com/forums/thread/3845115
+
+// DUBOIS
+// https://ixora.io/projects/camera-3D/dubois-anaglyphs/
+// https://github.com/hx2A/Camera3D/blob/master/src/camera3D/generators/AnaglyphGenerator.java
 vec3 redblue_grey(vec3 pixel_left, vec3 pixel_right) {
     mat3 matrix_left = mat3( // Column first.
         0.299, 0.000, 0.000,
