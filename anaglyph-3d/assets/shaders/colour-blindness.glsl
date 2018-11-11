@@ -31,6 +31,7 @@ uniform int _type = 0;
 // http://brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
 //#define CLASSIC_MODE   1
 #define RGB_NOT_NATIVELY_LINEAR   1
+//#define USE_CIE_RGB 1
 
 // http://biecoll.ub.uni-bielefeld.de/volltexte/2007/52/pdf/ICVS2007-6.pdf
 // https://arxiv.org/pdf/1711.10662.pdf
@@ -93,44 +94,104 @@ vec3 daltonize(vec3 color, int type) {
 
 #else // CLASSIC_MODE
 
-#ifdef RGB_NOT_NATIVELY_LINEAR
 float remove_gamma(float s) {
     float r = (s <= 0.04045) ? s / 12.92 : pow((s + 0.055) / 1.055, 2.4);
-    return clamp(r, 0.0, 1.0);
+    return r;//clamp(r, 0.0, 1.0);
 }
 
 float apply_gamma(float s) {
-    float r = (s <= 0.0031308) ? 12.92f * s : 1.055 * pow(s, 1 / 2.4) - 0.055;
-    return clamp(r, 0.0, 1.0);
+    float r = (s <= 0.0031308) ? 12.92 * s : 1.055 * pow(s, 1 / 2.4) - 0.055;
+    return r;//clamp(r, 0.0, 1.0);
 }
-#endif
 
-vec3 rgb_to_lsm(vec3 color) {
-#ifdef RGB_NOT_NATIVELY_LINEAR
-    vec3 rgb = vec3(remove_gamma(color.r), remove_gamma(color.g), remove_gamma(color.b)); // Convert to linear RGB.
+// https://www.image-engineering.de/library/technotes/958-how-to-convert-between-srgb-and-ciexyz
+/*
+// Converts a color from linear light gamma to sRGB gamma
+vec3 fromLinear(vec4 linearRGB)
+{
+    bvec3 cutoff = lessThan(linearRGB, vec3(0.0031308));
+    vec3 higher = vec4(1.055)*pow(linearRGB, vec3(1.0/2.4)) - vec3(0.055);
+    vec3 lower = linearRGB * vec3(12.92);
+
+    return mix(higher, lower, cutoff);
+}
+
+// Converts a color from sRGB gamma to linear light gamma
+vec3 toLinear(vec3 sRGB)
+{
+    bvec3 cutoff = lessThan(sRGB, vec3(0.04045));
+    vec3 higher = pow((sRGB + vec3(0.055))/vec3(1.055), vec3(2.4));
+    vec3 lower = sRGB/vec3(12.92);
+
+    return mix(higher, lower, cutoff);
+}
+*/
+// https://en.wikipedia.org/wiki/SRGB
+// http://www.brucelindbloom.com/index.html?Eqn_RGB_to_XYZ.html
+// http://www.brucelindbloom.com/index.html?Eqn_XYZ_to_RGB.html
+vec3 srgb_to_rgb(vec3 srgb) {
+    return vec3(remove_gamma(srgb.r), remove_gamma(srgb.g), remove_gamma(srgb.b)); // sRGB to Linear RGB.
+}
+
+// https://en.wikipedia.org/wiki/CIE_1931_color_space
+// http://www.brucelindbloom.com/index.html?Eqn_RGB_to_XYZ.html
+vec3 rgb_to_xyz(vec3 rgb) {
+#ifdef USE_CIE_RGB
+    mat3 m = mat3( // Linear RGB to XYZ.
+        0.49000, 0.17697, 0.00000,
+        0.31000, 0.81240, 0.01063,
+        0.20000, 0.01063, 0.99000
+    );
+    return (m * rgb) / 0.17697;
 #else
-    vec3 rgb = color;
-#endif
-    mat3 m = mat3( // Linear RGB to LMS.
-        0.31399022, 0.15537241, 0.01775239,
-        0.63951294, 0.75789446, 0.10944209,
-        0.04649755, 0.08670142, 0.87256922
+    mat3 m = mat3( // Linear RGB to XYZ.
+        0.4124564, 0.2126729, 0.0193339,
+        0.3575761, 0.7151522, 0.1191920,
+        0.1804375, 0.0721750, 0.9503041
     );
     return m * rgb;
+#endif
 }
 
-vec3 lms_to_rgb(vec3 color) {
-    mat3 m = mat3(
-         5.47221206, -1.12524190,  0.02980165,
-        -4.64196010,  2.29317094, -0.19318073,
-         0.16963708, -0.16789520,  1.16364789
+// https://en.wikipedia.org/wiki/LMS_color_space
+vec3 xyz_to_lsm(vec3 xyz) {
+    mat3 m = mat3( // XYZ to LMS (Hunt-Pointer-Estevez)
+         0.4002, -0.2263, 0.0000,
+         0.7076,  1.1653, 0.0000,
+        -0.0808,  0.0457, 0.9182
     );
-    vec3 lms = m * color;
-#if RGB_NOT_NATIVELY_LINEAR
-    return vec3(apply_gamma(lms.r), apply_gamma(lms.g), apply_gamma(lms.b));
+    return m * xyz;
+}
+
+vec3 lms_to_xyz(vec3 lms) {
+    mat3 m = mat3( // XYZ to LMS (Hunt-Pointer-Estevez)
+         1.8600670,  0.3612229, 0.000000,
+        -1.1294800,  0.6388043, 0.000000,
+         0.2198983, -0.000007127501, 1.089087
+    );
+    return m * lms;
+}
+
+vec3 xyz_to_rgb(vec3 xyz) {
+#ifdef USE_CIE_RGB
+    mat3 m = mat3( // XYZ to Linear RGB.
+         0.41847,  -0.091169,  0.00092090,
+        -0.15866,   0.25243,  -0.0025498,
+        -0.082835,  0.015708,  0.17860
+    );
+    return m * xyz;
 #else
-    return lms;
+    mat3 m = mat3( // XYZ to Linear RGB.
+         3.2404542, -0.9692660,  0.0556434,
+        -1.5371385,  1.8760108, -0.2040259,
+        -0.4985314,  0.0415560,  1.0572252
+    );
+    return m * xyz;
 #endif
+}
+
+vec3 rgb_to_srgb(vec3 rgb) {
+    return vec3(apply_gamma(rgb.r), apply_gamma(rgb.g), apply_gamma(rgb.b)); // Linear RGB to sRGB.
 }
 
 vec3 daltonize(vec3 color, int type) {
@@ -189,12 +250,18 @@ vec3 compensate(vec3 lms, int type) {
 
 // https://web.archive.org/web/20180815090300/http://www.daltonize.org/search/label/Daltonize
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
+#ifdef RGB_NOT_NATIVELY_LINEAR
+    vec3 srgb = texture2D(texture, texture_coords).rgb;
+    vec3 rgb = srgb_to_rgb(srgb);
+#else
     vec3 rgb = texture2D(texture, texture_coords).rgb;
+#endif
 
     // Conversion of RGB coordinates into LMS, a color space suitable for calculating color blindness as it's
     // represented by the three types of cones of the human eye, named after their sensitivity at wavelengths;
     // Long (564–580nm), Medium (534–545nm) and Short (420–440nm).
-    vec3 lms = rgb_to_lsm(rgb);
+    vec3 xyz = rgb_to_xyz(rgb);
+    vec3 lms = xyz_to_lsm(xyz);
 
     // Simulation of color blindness by reducing the colors along a dichromatic confusion line, the line parallel to
     // the axis of the missing photoreceptor, to a single color.
@@ -205,7 +272,13 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
     lms = compensate(lms, _type);
 
     // Conversion of LMS coordinates back into RGB using the inverse of the RGB->LMS matrix.
-    rgb = lms_to_rgb(lms);
+    xyz = lms_to_xyz(lms);
+    rgb = xyz_to_rgb(xyz);
 
+#ifdef RGB_NOT_NATIVELY_LINEAR
+    srgb = rgb_to_srgb(rgb);
+    return vec4(srgb, 1.0);
+#else
     return vec4(rgb, 1.0);
+#endif
 }

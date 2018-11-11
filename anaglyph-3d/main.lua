@@ -78,6 +78,12 @@ end
 
 function love.update(dt)
   _time = _time + dt
+  if _shader:hasUniform('_time') then
+    _shader:send('_time', _time)
+  end
+  if _filter:hasUniform('_time') then
+    _filter:send('_time', _time)
+  end
 end
 
 function love.draw()
