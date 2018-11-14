@@ -41,14 +41,15 @@ local _debug = false
 
 local _font = nil
 
+local _autoscroll = true
 local _offset = 0.0
 local _parallax = nil
 local _layers = {
-  { file = 'data/layers/08.png', speed = 0.1000, image = nil },
-  { file = 'data/layers/07.png', speed = 0.2500, image = nil },
-  { file = 'data/layers/06.png', speed = 0.5000, image = nil },
-  { file = 'data/layers/05.png', speed = 0.7500, image = nil },
-  { file = 'data/layers/04.png', speed = 1.0000, image = nil },
+  { file = 'data/layers/08.png', speed = 0.0000, image = nil },
+  { file = 'data/layers/07.png', speed = 0.5000, image = nil },
+  { file = 'data/layers/06.png', speed = 1.0000, image = nil },
+  { file = 'data/layers/05.png', speed = 1.2500, image = nil },
+  { file = 'data/layers/04.png', speed = 1.5000, image = nil },
   { file = 'data/layers/03.png', speed = 2.0000, image = nil },
   { file = 'data/layers/02.png', speed = 4.0000, image = nil },
   { file = 'data/layers/01.png', speed = 8.0000, image = nil },
@@ -64,6 +65,8 @@ local _type = 0
 
 function love.load(args)
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
+
+  love.keyboard.setKeyRepeat(true)
 
   love.mouse.setVisible(true)
   love.mouse.setGrabbed(false)
@@ -106,7 +109,9 @@ function love.load(args)
 end
 
 function love.update(dt)
-  _offset = _offset + (dt * 32.0)
+  if _autoscroll then
+    _offset = _offset + (dt * 16.0)
+  end
 
   _canvas:update(dt)
 end
@@ -116,7 +121,7 @@ function love.draw()
       love.graphics.setShader(_parallax)
 
       love.graphics.setCanvas(_images.left)
-      _parallax:send('_offset', _offset - 1) -- Don't invert direction
+      _parallax:send('_offset', _offset - 4) -- Don't invert direction
       for _, layer in ipairs(_layers) do
         _parallax:send('_speed', layer.speed)
         love.graphics.draw(layer.image)
@@ -130,7 +135,7 @@ function love.draw()
       end
 
       love.graphics.setCanvas(_images.right)
-      _parallax:send('_offset', _offset + 1)
+      _parallax:send('_offset', _offset + 4)
       for _, layer in ipairs(_layers) do
         _parallax:send('_speed', layer.speed)
         love.graphics.draw(layer.image)
@@ -167,7 +172,13 @@ function love.keypressed(key, scancode, isrepeat)
     _type = math.max(_type - 1, 0)
   elseif key == 'f4' then
     _type = math.min(_type + 1, #COLOUR_BLINDNESS_TYPES - 1)
+  elseif key == 'f8' then
+    _autoscroll = not _autoscroll
   elseif key == 'f12' then
     _debug = not _debug
+  elseif key == 'left' then
+    _offset = _offset - 1.0
+  elseif key == 'right' then
+    _offset = _offset + 1.0
   end
 end
