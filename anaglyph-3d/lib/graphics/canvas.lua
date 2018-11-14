@@ -56,7 +56,7 @@ function Canvas:chain(shader, initialize, update)
   end
 end
 
-function Canvas:enqueue(callback, depth, mode)
+function Canvas:defer(callback, depth, mode)
   local queue = mode == 'post-effects' and self.post_effects or self.pre_effects
   queue[#queue + 1] = { callback = callback, depth = depth or 0 }
 end

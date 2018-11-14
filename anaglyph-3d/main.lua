@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 local Canvas = require('lib/graphics/canvas')
 
 local ANAGLYPH_MODES = {
+  'NONE',
   'RED-BLUE GREY', 'RED-GREEN GREY', 'BLUE-GREEN GREY',
   'RED-CYAN GREY', 'RED-CYAN COLOR', 'RED-CYAN HALF-COLOR', 'RED-CYAN DUBOIS',
   'AMBER-BLUE GREY', 'AMBER-BLUE COLOR', 'AMBER-BLUE HALF-COLOR (ColorCode-3D)', 'AMBER-BLUE DUBOIS',
@@ -93,12 +94,12 @@ function love.update(dt)
 end
 
 function love.draw()
-  _canvas:enqueue(function(debug)
+  _canvas:defer(function(debug)
       love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
       love.graphics.draw(_images['center'])
     end, 0)
 
-    _canvas:enqueue(function(debug)
+    _canvas:defer(function(debug)
         love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
         love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
 
@@ -116,9 +117,13 @@ end
 
 function love.keypressed(key, scancode, isrepeat)
   if key == 'f1' then
-    _mode = (_mode + 1) % #ANAGLYPH_MODES
+    _mode = math.max(_mode - 1, 0)
   elseif key == 'f2' then
-    _type = (_type + 1) % #COLOUR_BLINDNESS_TYPES
+    _mode = math.min(_mode + 1, #ANAGLYPH_MODES - 1)
+  elseif key == 'f3' then
+    _type = math.max(_type - 1, 0)
+  elseif key == 'f4' then
+    _type = math.min(_type + 1, #COLOUR_BLINDNESS_TYPES - 1)
   elseif key == 'f12' then
     _debug = not _debug
   end
