@@ -20,7 +20,7 @@ freely, subject to the following restrictions:
 
 ]] --
 
-local Canvas = require('lib/graphics/canvas')
+local Renderer = require('lib/graphics/renderer')
 
 local ANAGLYPH_MODES = {
   'NONE',
@@ -35,7 +35,7 @@ local COLOUR_BLINDNESS_TYPES = {
   'NORMAL', 'PROTANOPE (NO REDS)', 'DEUTERANOPE (NO GREENS)', 'TRITANOPE (NO BLUES)', 'ACHROMATOPSIA', 'BLUE-CONE MONOCHROMACY'
 }
 
-local _canvas = nil
+local __renderer = nil
 
 local _debug = false
 
@@ -51,8 +51,8 @@ local _layers = {
   { file = 'data/layers/05.png', speed = 1.2500, image = nil },
   { file = 'data/layers/04.png', speed = 1.5000, image = nil },
   { file = 'data/layers/03.png', speed = 2.0000, image = nil },
-  { file = 'data/layers/02.png', speed = 4.0000, image = nil },
-  { file = 'data/layers/01.png', speed = 8.0000, image = nil },
+  { file = 'data/layers/02.png', speed = 3.0000, image = nil },
+  { file = 'data/layers/01.png', speed = 4.0000, image = nil },
 }
 local _images = {
     ['left'] = 0,
@@ -64,8 +64,6 @@ local _mode = 0
 local _type = 0
 
 function love.load(args)
-  love.graphics.setDefaultFilter('nearest', 'nearest', 1)
-
   love.keyboard.setKeyRepeat(true)
 
   love.mouse.setVisible(true)
@@ -80,32 +78,33 @@ function love.load(args)
     math.random()
   end
 
+  _renderer = Renderer.new()
+  _renderer:initialize(480, 270, true)
+
   _parallax = love.graphics.newShader('assets/shaders/parallax.glsl')
   for _, layer in pairs(_layers) do
     layer.image = love.graphics.newImage(layer.file)
     layer.image:setWrap('repeat', 'repeat') -- Using HORIZONTAL infinite wrap mode.
   end
   for key, _ in pairs(_images) do
-    _images[key] = love.graphics.newCanvas()
+    _images[key] = love.graphics.newCanvas(_renderer.width, _renderer.height)
   end
+  _parallax:send('_texture_size', { _renderer.width, _renderer.height })
 
-  _font = love.graphics.newFont('assets/fonts/m6x11.ttf', 32)
-
-  _canvas = Canvas.new()
-  _canvas:resize(love.graphics.getWidth(), love.graphics.getHeight())
-
-  _canvas:chain(love.graphics.newShader('assets/shaders/anaglyph.glsl'), function(shader)
+  _renderer:chain(love.graphics.newShader('assets/shaders/anaglyph.glsl'), function(shader)
       shader:send('_left', _images.left)
       shader:send('_right', _images.right)
     end,
     function(shader)
       shader:send('_mode', _mode)
     end)
-  _canvas:chain(love.graphics.newShader('assets/shaders/colour-blindness.glsl'), function(shader)
+  _renderer:chain(love.graphics.newShader('assets/shaders/colour-blindness.glsl'), function(shader)
     end,
     function(shader)
       shader:send('_type', _type)
     end)
+
+  _font = love.graphics.newFont('assets/fonts/m6x11.ttf', 32)
 end
 
 function love.update(dt)
@@ -113,15 +112,15 @@ function love.update(dt)
     _offset = _offset + (dt * 16.0)
   end
 
-  _canvas:update(dt)
+  _renderer:update(dt)
 end
 
 function love.draw()
-  _canvas:defer(function(debug)
+  _renderer:defer(function(debug)
       love.graphics.setShader(_parallax)
 
       love.graphics.setCanvas(_images.left)
-      _parallax:send('_offset', _offset - 4) -- Don't invert direction
+      _parallax:send('_offset', _offset - 2) -- Don't invert direction
       for _, layer in ipairs(_layers) do
         _parallax:send('_speed', layer.speed)
         love.graphics.draw(layer.image)
@@ -135,29 +134,29 @@ function love.draw()
       end
 
       love.graphics.setCanvas(_images.right)
-      _parallax:send('_offset', _offset + 4)
+      _parallax:send('_offset', _offset + 2)
       for _, layer in ipairs(_layers) do
         _parallax:send('_speed', layer.speed)
         love.graphics.draw(layer.image)
       end
-  end, -1)
+  end, 0)
 
-  _canvas:defer(function(debug)
+  _renderer:defer(function(debug)
       love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
       love.graphics.draw(_images.center)
-    end, 0)
+    end, 1)
 
-    _canvas:defer(function(debug)
-        love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
-        love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
+  _renderer:defer(function(debug)
+      love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+      love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
 
-        love.graphics.setFont(_font)
-        love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
-        love.graphics.print(ANAGLYPH_MODES[_mode + 1], 0, love.graphics.getHeight() - 64)
-        love.graphics.print(COLOUR_BLINDNESS_TYPES[_type + 1], 0, love.graphics.getHeight() - 32)
-      end, nil, 'post-effects')
+      love.graphics.setFont(_font)
+      love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
+      love.graphics.print(ANAGLYPH_MODES[_mode + 1], 0, love.graphics.getHeight() - 64)
+      love.graphics.print(COLOUR_BLINDNESS_TYPES[_type + 1], 0, love.graphics.getHeight() - 32)
+    end, nil, 'post-draw')
 
-  _canvas:draw(_debug)
+  _renderer:draw(_debug)
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
