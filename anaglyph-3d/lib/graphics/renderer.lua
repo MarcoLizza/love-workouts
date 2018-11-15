@@ -44,15 +44,16 @@ function Renderer:initialize(width, height, scale_to_fit)
   self.height = height
   self.scale = 1
 
+  local _, _, flags = love.window.getMode()
+  local desktop_width, desktop_height = love.window.getDesktopDimensions(flags.display)
+
   if scale_to_fit then
-    local _, _, flags = love.window.getMode()
-    local desktop_width, desktop_height = love.window.getDesktopDimensions(flags.display)
-    desktop_width = desktop_width * 0.95
-    desktop_height = desktop_height * 0.95
+    local safe_width = desktop_width * 0.95
+    local safe_height = desktop_height * 0.95
 
     for s = 1, 9999 do
       local w, h = width * s, height * s
-      if w > desktop_width or h > desktop_height then
+      if w > safe_width or h > safe_height then
         break
       end
 
@@ -60,15 +61,31 @@ function Renderer:initialize(width, height, scale_to_fit)
     end
   end
 
-  print(string.format('window-width=%d, window-height=%d', width * self.scale, height * self.scale))
-  print(string.format('width=%d, height=%d, scale=%d', self.width, self.height, self.scale))
+--  print(string.format('window-width=%d, window-height=%d', width * self.scale, height * self.scale))
+--  print(string.format('width=%d, height=%d, scale=%d', self.width, self.height, self.scale))
 
   -- Pixel-perfect filter when scaling.
   love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 
-  -- We don't pass any specific flag since we want to keep the ones we
-  -- chose at the beginning.
-  love.window.setMode(width * self.scale, height * self.scale)
+  -- We need to pass the mode settings or the default values will kick-in (with, for example, vsync enabled). We
+  -- build the new settings with a subset of the current ones.
+  local settings = {
+      fullscreen = flags.fullscreen,
+      msaa = flags.msaa,
+      stencil = flags.stencil,
+      depth = flags.depth,
+      resizable = flags.resizable,
+      minwidth = flags.minwidth,
+      minheight = flags.minheight,
+      borderless = flags.borderless,
+      centered = flags.centered,
+      display = flags.display,
+      highdpi = flags.highdpi,
+      vsync = flags.vsync,
+      x = (flags.x >= 0 and flags.x < desktop_width) and flags.x or nil,
+      y = (flags.y >= 0 and flags.y < desktop_height) and flags.y or nil
+    }
+  love.window.setMode(width * self.scale, height * self.scale, settings)
 
   self.buffers = {
       fore = love.graphics.newCanvas(self.width, self.height),
