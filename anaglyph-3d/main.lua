@@ -91,7 +91,7 @@ function love.load(args)
   _parallax:send('_texture_size', { _renderer.width, _renderer.height })
 
 --[[
-  _renderer:chain(love.graphics.newShader('assets/shaders/stereo.glsl'), function(shader)
+  _renderer:chain(love.graphics.newShader('assets/shaders/stereoscopy.glsl'), function(shader)
       shader:send('_left', _images.left)
       shader:send('_right', _images.right)
     end,
