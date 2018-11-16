@@ -23,7 +23,7 @@ freely, subject to the following restrictions:
 local Renderer = require('lib/graphics/renderer')
 
 local ANAGLYPH_MODES = {
-  'NONE',
+  'LEFT', 'RIGHT',
   'RED-BLUE GREY', 'RED-GREEN GREY', 'BLUE-GREEN GREY',
   'RED-CYAN GREY', 'RED-CYAN COLOR', 'RED-CYAN HALF-COLOR', 'RED-CYAN DUBOIS',
   'AMBER-BLUE GREY', 'AMBER-BLUE COLOR', 'AMBER-BLUE HALF-COLOR (ColorCode-3D)', 'AMBER-BLUE DUBOIS',
@@ -35,7 +35,7 @@ local COLOUR_BLINDNESS_TYPES = {
   'NORMAL', 'PROTANOPE (NO REDS)', 'DEUTERANOPE (NO GREENS)', 'TRITANOPE (NO BLUES)', 'ACHROMATOPSIA', 'BLUE-CONE MONOCHROMACY'
 }
 
-local __renderer = nil
+local _renderer = nil
 
 local _debug = false
 
@@ -56,7 +56,6 @@ local _layers = {
 }
 local _images = {
     ['left'] = 0,
-    ['center'] = 0,
     ['right'] = 0
   }
 
@@ -91,6 +90,14 @@ function love.load(args)
   end
   _parallax:send('_texture_size', { _renderer.width, _renderer.height })
 
+--[[
+  _renderer:chain(love.graphics.newShader('assets/shaders/stereo.glsl'), function(shader)
+      shader:send('_left', _images.left)
+      shader:send('_right', _images.right)
+    end,
+    function(shader)
+    end)
+]]
   _renderer:chain(love.graphics.newShader('assets/shaders/anaglyph.glsl'), function(shader)
       shader:send('_left', _images.left)
       shader:send('_right', _images.right)
@@ -126,13 +133,6 @@ function love.draw()
         love.graphics.draw(layer.image)
       end
 
-      love.graphics.setCanvas(_images.center)
-      _parallax:send('_offset', _offset)
-      for _, layer in ipairs(_layers) do
-        _parallax:send('_speed', layer.speed)
-        love.graphics.draw(layer.image)
-      end
-
       love.graphics.setCanvas(_images.right)
       _parallax:send('_offset', _offset + 2)
       for _, layer in ipairs(_layers) do
@@ -142,8 +142,7 @@ function love.draw()
   end, 0)
 
   _renderer:defer(function(debug)
-      love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-      love.graphics.draw(_images.center)
+      love.graphics.rectangle('fill', 0, 0, _renderer.width, _renderer.height)
     end, 1)
 
   _renderer:defer(function(debug)
