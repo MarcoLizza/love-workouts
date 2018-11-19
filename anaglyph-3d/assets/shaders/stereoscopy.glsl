@@ -1,5 +1,6 @@
 uniform Image _left;
 uniform Image _right;
+uniform int _mode = 0;
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
     vec2 uv = screen_coords / vec2(love_ScreenSize.xy);
