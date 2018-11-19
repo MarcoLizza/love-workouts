@@ -28,6 +28,21 @@ local function depth_sorter(lhs, rhs)
   return lhs.depth < rhs.depth
 end
 
+local function has_changed(effect)
+  local info = love.filesystem.getInfo(effect.file)
+  -- Check if the timestamp has changed
+  if not effect.modtime or effect.modtime < info.modtime then
+    effect.modtime = info.modtime
+    -- Check if the content has changed, too.
+    local digest = love.data.encode('string', 'base64', love.data.hash('sha256', love.filesystem.read(effect.file)))
+    if effect.digest ~= digest then
+      effect.digest = digest
+      return true
+    end
+  end
+  return false
+end
+
 function Renderer.new(hot_reload_period)
   return setmetatable({
       hot_reload_period = hot_reload_period,
@@ -93,21 +108,6 @@ function Renderer:initialize(width, height, scale_to_fit)
       fore = love.graphics.newCanvas(self.width, self.height),
       back = love.graphics.newCanvas(self.width, self.height)
     }
-end
-
-local function has_changed(effect)
-  local info = love.filesystem.getInfo(effect.file)
-  -- Check if the timestamp has changed
-  if not effect.modtime or effect.modtime < info.modtime then
-    effect.modtime = info.modtime
-    -- Check if the content has changed, too.
-    local digest = love.data.encode('string', 'base64', love.data.hash('sha256', love.filesystem.read(effect.file)))
-    if effect.digest ~= digest then
-      effect.digest = digest
-      return true
-    end
-  end
-  return false
 end
 
 function Renderer:reload()
