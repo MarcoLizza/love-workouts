@@ -28,8 +28,10 @@ local function depth_sorter(lhs, rhs)
   return lhs.depth < rhs.depth
 end
 
-function Renderer.new()
+function Renderer.new(hot_reload_period)
   return setmetatable({
+      hot_reload_period = hot_reload_period,
+      hot_reload_timeout = hot_reload_period,
       buffers = nil,
       pre_effects = {},
       post_effects = {},
@@ -93,14 +95,65 @@ function Renderer:initialize(width, height, scale_to_fit)
     }
 end
 
+local function has_changed(effect)
+  local info = love.filesystem.getInfo(effect.file)
+  -- Check if the timestamp has changed
+  if not effect.modtime or effect.modtime < info.modtime then
+    effect.modtime = info.modtime
+    -- Check if the content has changed, too.
+    local digest = love.data.encode('string', 'base64', love.data.hash('sha256', love.filesystem.read(effect.file)))
+    if effect.digest ~= digest then
+      effect.digest = digest
+      return true
+    end
+  end
+  return false
+end
+
+function Renderer:reload()
+  for _, effect in ipairs(self.effects) do
+    local changed = has_changed(effect)
+    if changed then
+      -- print('hot-loading "' .. effect.file .. '')
+      print(string.format('HOT-RELOAD "%s"', effect.file))
+      local success, shader = xpcall(function()
+          return love.graphics.newShader(effect.file)
+        end, function(...)
+          print(...)
+          print(debug.traceback())
+        end)
+      if success and shader then
+        effect.shader = shader
+        if effect.initialize then
+          effect.initialize(effect.shader)
+        end
+      end
+    end
+  end
+end
+
 function Renderer:update(dt)
+  if self.hot_reload_period then
+    self.hot_reload_timeout = self.hot_reload_timeout + dt
+    if self.hot_reload_timeout >= self.hot_reload_period then
+      self.hot_reload_timeout = 0.0
+      self:reload()
+    end
+  end
+
   self.time = self.time + dt
 end
 
-function Renderer:chain(shader, initialize, update)
-  self.effects[#self.effects + 1] = { shader = shader, initialize = initialize, update = update }
-  if initialize then
-    initialize(shader)
+function Renderer:chain(file, initialize, update)
+  self.effects[#self.effects + 1] = {
+      file = file,
+      modtime = 0,
+      shader = nil,
+      initialize = initialize,
+      update = update
+    }
+  if not self.hot_reload_period or self.hot_reload_period > 0 then
+    self:reload() -- force load on chaining
   end
 end
 

@@ -77,7 +77,7 @@ function love.load(args)
     math.random()
   end
 
-  _renderer = Renderer.new()
+  _renderer = Renderer.new(10.0)
   _renderer:initialize(480, 270, true)
 
   _parallax = love.graphics.newShader('assets/shaders/parallax.glsl')
@@ -98,18 +98,19 @@ function love.load(args)
     function(shader)
     end)
 ]]
-  _renderer:chain(love.graphics.newShader('assets/shaders/anaglyph.glsl'), function(shader)
+  _renderer:chain('assets/shaders/anaglyph.glsl', function(shader)
       shader:send('_left', _images.left)
       shader:send('_right', _images.right)
     end,
     function(shader)
       shader:send('_mode', _mode)
     end)
-  _renderer:chain(love.graphics.newShader('assets/shaders/colour-blindness.glsl'), function(shader)
+  _renderer:chain('assets/shaders/colour-blindness.glsl', function(shader)
     end,
     function(shader)
       shader:send('_type', _type)
     end)
+  _renderer:chain('assets/shaders/greyscale.glsl')
 
   _font = love.graphics.newFont('assets/fonts/m6x11.ttf', 32)
 end
