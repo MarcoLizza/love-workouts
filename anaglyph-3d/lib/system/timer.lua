@@ -34,7 +34,7 @@ function Timer.new(duration, on_elapsed, periodic)
 end
 
 function Timer:reset()
-  timer.elapsed = 0
+  self.elapsed = 0
 end
 
 function Timer:update(dt)
@@ -42,11 +42,11 @@ function Timer:update(dt)
     return
   end
 
-  timer.elapsed = timer.elapsed + dt
-  while timer.elapsed >= timer.duration do
-    timer.elapsed = timer.elapsed - timer.duration
-    local cancel = timer.on_elapsed()
-    if cancel or not timer.periodic then
+  self.elapsed = self.elapsed + dt
+  while self.elapsed >= self.duration do
+    self.elapsed = self.elapsed - self.duration
+    local cancel = self.on_elapsed()
+    if cancel or not self.periodic then
       self.elapsed = nil
       break
     end
