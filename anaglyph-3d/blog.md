@@ -10,3 +10,6 @@ Parallax scrolling through shaders.
 ## Shader chaining
 
 Why doesn't GLSL support some kind og automatic shader chaining? Is a pre-compiler useful?
+
+## Hot-reload
+

@@ -113,7 +113,7 @@ function love.load(args)
 --  _renderer:chain('assets/shaders/vignette.glsl', function(shader)
 --    shader:send('_step', { 1.0 / _renderer.width, 1.0 / _renderer.height })
 --  end)
---  _renderer:chain('assets/shaders/greyscale.glsl')
+  _renderer:chain('assets/shaders/greyscale.glsl')
 
   _font = love.graphics.newFont('assets/fonts/m6x11.ttf', 32)
 end
