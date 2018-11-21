@@ -167,6 +167,24 @@ function Renderer:defer(callback, depth, mode)
   queue[#queue + 1] = { callback = callback, depth = depth or 0 }
 end
 
+-- Safe iterator that excludes the null entries and additional check.
+local function ipairs_s(table, check)
+  local length = #table
+  local index = 0
+  return function()
+      while true do
+        index = index + 1
+        if index > length then
+          return nil, nil
+        end
+        local value = table[index]
+        if value ~= nil and (not check or check(value)) then
+          return index, value
+        end
+      end
+    end
+end
+
 function Renderer:draw(debug)
   local fore, back = self.buffers.fore, self.buffers.back
 
@@ -183,7 +201,8 @@ function Renderer:draw(debug)
   end
   self.pre_effects = {}
 
-  for _, effect in ipairs(self.effects) do
+--  for _, effect in ipairs(self.effects) do
+  for _, effect in ipairs_s(self.effects, function(effect) return effect.shader ~= nil end) do
     local shader = effect.shader
 
     if shader:hasUniform('_time') then
