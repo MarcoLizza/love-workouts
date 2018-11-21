@@ -20,6 +20,8 @@ freely, subject to the following restrictions:
 
 ]] --
 
+local Timer = require('lib/system/timer')
+
 local Renderer = {}
 
 Renderer.__index = Renderer
@@ -43,16 +45,15 @@ local function has_changed(effect)
   return false
 end
 
-function Renderer.new(hot_reload_period)
+function Renderer.new(reload_period)
   return setmetatable({
-      hot_reload_period = hot_reload_period,
-      hot_reload_timeout = hot_reload_period,
+      time = 0,
       buffers = nil,
       pre_effects = {},
       post_effects = {},
       post_draw = {},
       effects = {},
-      time = 0
+      reload_period = reload_period
     }, Renderer)
 end
 
@@ -108,6 +109,8 @@ function Renderer:initialize(width, height, scale_to_fit)
       fore = love.graphics.newCanvas(self.width, self.height),
       back = love.graphics.newCanvas(self.width, self.height)
     }
+
+  self.reloader = Timer.new(self.reload_period, function() self:reload() end, true)
 end
 
 function Renderer:reload()
@@ -133,13 +136,7 @@ function Renderer:reload()
 end
 
 function Renderer:update(dt)
-  if self.hot_reload_period then
-    self.hot_reload_timeout = self.hot_reload_timeout + dt
-    if self.hot_reload_timeout >= self.hot_reload_period then
-      self.hot_reload_timeout = 0.0
-      self:reload()
-    end
-  end
+  self.reloader:update(dt)
 
   self.time = self.time + dt
 end
@@ -152,7 +149,7 @@ function Renderer:chain(file, initialize, update)
       initialize = initialize,
       update = update
     }
-  if not self.hot_reload_period or self.hot_reload_period > 0 then
+  if not self.reload_period or self.reload_period > 0 then
     self:reload() -- force load on chaining
   end
 end

@@ -24,11 +24,11 @@ local Timer = {}
 
 Timer.__index = Timer
 
-function Timer.new(duration, on_elapsed, periodic)
+function Timer.new(period, on_elapsed, looped)
   return setmetatable({
-      duration = duration,
+      period = period,
       on_elapsed = on_elapsed,
-      periodic = periodic,
+      looped = looped,
       elapsed = 0
     }, Timer)
 end
@@ -43,10 +43,10 @@ function Timer:update(dt)
   end
 
   self.elapsed = self.elapsed + dt
-  while self.elapsed >= self.duration do
-    self.elapsed = self.elapsed - self.duration
+  while self.elapsed >= self.period do
+    self.elapsed = self.elapsed - self.period
     local cancel = self.on_elapsed()
-    if cancel or not self.periodic then
+    if cancel or not self.looped then
       self.elapsed = nil
       break
     end
