@@ -20,8 +20,6 @@ freely, subject to the following restrictions:
 
 ]] --
 
-local Timer = require('lib/system/timer')
-
 local Renderer = {}
 
 Renderer.__index = Renderer
@@ -30,30 +28,15 @@ local function depth_sorter(lhs, rhs)
   return lhs.depth < rhs.depth
 end
 
-local function has_changed(effect)
-  local info = love.filesystem.getInfo(effect.file)
-  -- Check if the timestamp has changed
-  if not effect.modtime or effect.modtime < info.modtime then
-    effect.modtime = info.modtime
-    -- Check if the content has changed, too.
-    local digest = love.data.encode('string', 'base64', love.data.hash('sha256', love.filesystem.read(effect.file)))
-    if effect.digest ~= digest then
-      effect.digest = digest
-      return true
-    end
-  end
-  return false
-end
-
-function Renderer.new(reload_period)
+function Renderer.new(loader)
   return setmetatable({
+      loader = loader,
       time = 0,
       buffers = nil,
       pre_effects = {},
       post_effects = {},
       post_draw = {},
       effects = {},
-      reload_period = reload_period
     }, Renderer)
 end
 
@@ -109,49 +92,17 @@ function Renderer:initialize(width, height, scale_to_fit)
       fore = love.graphics.newCanvas(self.width, self.height),
       back = love.graphics.newCanvas(self.width, self.height)
     }
-
-  self.reloader = Timer.new(self.reload_period, function() self:reload() end, true)
-end
-
-function Renderer:reload()
-  for _, effect in ipairs(self.effects) do
-    local changed = has_changed(effect)
-    if changed then
-      -- print('hot-loading "' .. effect.file .. '')
-      print(string.format('HOT-RELOAD "%s"', effect.file))
-      local success, shader = xpcall(function()
-          return love.graphics.newShader(effect.file)
-        end, function(...)
-          print(...)
-          print(debug.traceback())
-        end)
-      if success and shader then
-        effect.shader = shader
-        if effect.initialize then
-          effect.initialize(effect.shader)
-        end
-      end
-    end
-  end
 end
 
 function Renderer:update(dt)
-  self.reloader:update(dt)
-
   self.time = self.time + dt
 end
 
-function Renderer:chain(file, initialize, update)
+function Renderer:chain(file, on_updated)
   self.effects[#self.effects + 1] = {
       file = file,
-      modtime = 0,
-      shader = nil,
-      initialize = initialize,
-      update = update
+      on_updated = on_updated
     }
-  if not self.reload_period or self.reload_period > 0 then
-    self:reload() -- force load on chaining
-  end
 end
 
 function Renderer:defer(callback, depth, mode)
@@ -199,16 +150,16 @@ function Renderer:draw(debug)
   self.pre_effects = {}
 
 --  for _, effect in ipairs(self.effects) do
-  for _, effect in ipairs_s(self.effects, function(effect) return effect.shader ~= nil end) do
-    local shader = effect.shader
+  for _, effect in ipairs_s(self.effects, function(effect) return self.loader:get(effect.file) ~= nil end) do
+    local shader = self.loader:get(effect.file)
 
     if shader:hasUniform('_time') then
       shader:send('_time', self.time)
     end
 
-    local update = effect.update
-    if update then
-      update(shader)
+    local on_updated = effect.on_updated
+    if on_updated then
+      on_updated(shader)
     end
 
     love.graphics.setCanvas(fore) -- Don't restore, will be used for post-effects draws!
