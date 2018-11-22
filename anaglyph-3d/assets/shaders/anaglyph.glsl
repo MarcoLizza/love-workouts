@@ -277,60 +277,63 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 
     vec3 pixel;
     if (_mode == 0) {
-        pixel = texture2D(texture, texture_coords).rgb;
+        pixel = pixel_left;
     } else
     if (_mode == 1) {
-        pixel = redblue_grey(pixel_left, pixel_right);
+        pixel = pixel_right;
     } else
     if (_mode == 2) {
-        pixel = redgreen_grey(pixel_left, pixel_right);
+        pixel = redblue_grey(pixel_left, pixel_right);
     } else
     if (_mode == 3) {
-        pixel = bluegreen_grey(pixel_left, pixel_right);
+        pixel = redgreen_grey(pixel_left, pixel_right);
     } else
     if (_mode == 4) {
-        pixel = redcyan_grey(pixel_left, pixel_right);
+        pixel = bluegreen_grey(pixel_left, pixel_right);
     } else
     if (_mode == 5) {
-        pixel = redcyan_color(pixel_left, pixel_right);
+        pixel = redcyan_grey(pixel_left, pixel_right);
     } else
     if (_mode == 6) {
-        pixel = redcyan_halfcolor(pixel_left, pixel_right);
+        pixel = redcyan_color(pixel_left, pixel_right);
     } else
     if (_mode == 7) {
-        pixel = redcyan_dubois(pixel_left, pixel_right);
+        pixel = redcyan_halfcolor(pixel_left, pixel_right);
     } else
     if (_mode == 8) {
-        pixel = amberblue_grey(pixel_left, pixel_right);
+        pixel = redcyan_dubois(pixel_left, pixel_right);
     } else
     if (_mode == 9) {
-        pixel = amberblue_color(pixel_left, pixel_right);
+        pixel = amberblue_grey(pixel_left, pixel_right);
     } else
     if (_mode == 10) {
-        pixel = amberblue_halfcolor(pixel_left, pixel_right);
+        pixel = amberblue_color(pixel_left, pixel_right);
     } else
     if (_mode == 11) {
-        pixel = amberblue_dubois(pixel_left, pixel_right);
+        pixel = amberblue_halfcolor(pixel_left, pixel_right);
     } else
     if (_mode == 12) {
-        pixel = magentagreen_grey(pixel_left, pixel_right);
+        pixel = amberblue_dubois(pixel_left, pixel_right);
     } else
     if (_mode == 13) {
-        pixel = magentagreen_color(pixel_left, pixel_right);
+        pixel = magentagreen_grey(pixel_left, pixel_right);
     } else
     if (_mode == 14) {
-        pixel = magentagreen_halfcolor(pixel_left, pixel_right);
+        pixel = magentagreen_color(pixel_left, pixel_right);
     } else
     if (_mode == 15) {
-        pixel = magentagreen_dubois(pixel_left, pixel_right);
+        pixel = magentagreen_halfcolor(pixel_left, pixel_right);
     } else
     if (_mode == 16) {
-        pixel = magentayellow_color(pixel_left, pixel_right);
+        pixel = magentagreen_dubois(pixel_left, pixel_right);
     } else
     if (_mode == 17) {
-        pixel = magentacyan_color(pixel_left, pixel_right);
+        pixel = magentayellow_color(pixel_left, pixel_right);
     } else
     if (_mode == 18) {
+        pixel = magentacyan_color(pixel_left, pixel_right);
+    } else
+    if (_mode == 19) {
         pixel = yellowcyan_color(pixel_left, pixel_right);
     }
     return vec4(pixel, 1.0);
