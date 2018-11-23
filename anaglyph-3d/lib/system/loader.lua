@@ -26,31 +26,26 @@ local Loader = {}
 
 Loader.__index = Loader
 
-local function load(type, ...)
+local function query(file, modtime, digest)
+  local info = love.filesystem.getInfo(file)
+  if modtime and modtime == info.modtime then
+    return modtime, digest -- If the file modification time hasn't changed, don't recompute the digest!
+  end
+  return info.modtime, love.data.encode('string', 'base64', love.data.hash('sha256', love.filesystem.read(file)))
+end
+
+local function load(type, file, ...)
   if type == 'image' then
-    return love.graphics.newImage(...)
+    return love.graphics.newImage(file, ...)
   elseif type == 'font' then
-    return love.graphics.newFont(...)
+    return love.graphics.newFont(file, ...)
   elseif type == 'shader' then
-    return love.graphics.newShader(...)
+    return love.graphics.newShader(file, ...)
 --  elseif type == 'source' then
---    return love.graphics.newSource(...)
+--    return love.graphics.newSource(file, ...)
   else
     return nil
   end
-end
-
-local function has_changed(resource)
-  local info = love.filesystem.getInfo(resource.file)
-  if not resource.modtime or resource.modtime < info.modtime then -- Check if the timestamp has changed
-    resource.modtime = info.modtime
-    local digest = love.data.encode('string', 'base64', love.data.hash('sha256', love.filesystem.read(resource.file)))
-    if resource.digest ~= digest then -- Check if the content has changed, too.
-      resource.digest = digest
-      return true
-    end
-  end
-  return false
 end
 
 function Loader.new(period, burst_count)
@@ -68,34 +63,76 @@ function Loader:purge()
   self.resources = {}
 end
 
-function Loader:set(type, file, arguments, on_loaded)
+function Loader:preload(resources)
+  resources = {
+    { type = 'shader', file = '', args = '' }
+  }
+  for _, resource in resources do
+    self:set(resource.type, resource.file, unpack(resource.args))
+  end
+end
+
+function Loader:fetch(type, file, ...)
   if self.resources[file] ~= nil then -- The entry already exists, skip!
-    -- TODO: manage the `on_loaded` event as multi-entries, and enable registration?
-    print(string.format('resource "%s" already loaded', file))
+    print(string.format('! resource "%s" already loaded', file))
     return
   end
 
-  local args = { file, unpack(arguments or {}) }
-
-  local value = load(type, unpack(args)) -- Don't trap error on first load, resource is required!
-
-  if on_loaded and value then
-    on_loaded(value)
-  end
+  local value = load(type, file, ...) -- Don't trap error on first load, resource is required!
+  local modtime, digest = query(file) -- Detect the initial "digest"
 
   self.resources[file] = {
     type = type,
     file = file,
-    args = args,
-    on_loaded = on_loaded, -- on_loaded = {},
+    args = { ... },
+    listeners = {},
     value = value,
-    modtime = 0,
-    digest = nil
+    modtime = modtime,
+    digest = digest
   }
+end
+
+function Loader:dispose(file)
+  self.resources[file:lower()] = nil
 end
 
 function Loader:get(file)
   return self.resources[file:lower()].value
+end
+
+function Loader:watch(file, on_loaded)
+  local resource = self.resources[file:lower()]
+  if not resource then
+    print(string.format('! uknowwn resource "%s"', file))
+    return
+  end
+
+  local listener = resource.listeners[on_loaded]
+  if listener then
+    print(string.format('> listener "%s" already registered for resource "%s"', on_loaded, file))
+    return
+  end
+
+  resource.listeners[on_loaded] = true
+
+  local value = resource.value
+  if value then
+    on_loaded(value)
+  end
+end
+
+function Loader:unwatch(file, on_loaded)
+  local resource = self.resources[file:lower()]
+  if not resource then
+    print(string.format('! uknowwn resource "%s"', file))
+    return
+  end
+
+  if on_loaded then
+    resource.listeners[on_loaded] = nil
+  else
+    resource.listeners = {}
+  end
 end
 
 function Loader:call_if(file, lambda)
@@ -108,11 +145,16 @@ end
 function Loader:refresh()
   local count = self.burst_count or math.huge
   for _, resource in pairs(self.resources) do
-    local changed = has_changed(resource)
-    if changed then
+    local modtime, digest = query(resource.file, resource.modtime, resource.digest)
+    if resource.modtime ~= modtime or resource.digest ~= digest then
       print(string.format('> %s "%s" has changed', resource.type, resource.file))
+      print(string.format('  modtime is %d, digest is "%s"', modtime, digest))
+
+      resource.modtime = modtime
+      resource.digest = digest
+
       local success, value = xpcall(function()
-          return load(resource.type, unpack(resource.args))
+          return load(resource.type, resource.file, unpack(resource.args))
         end, function(...)
           print(...)
           print(debug.traceback())
@@ -120,8 +162,9 @@ function Loader:refresh()
       if success and value then
         print(string.format('- "%s" reloaded', resource.file))
         resource.value = value
-        if resource.on_loaded then
-          resource.on_loaded(resource.value)
+
+        for on_loaded, _ in pairs(resource.listeners) do
+          on_loaded(value)
         end
 
         count = count - 1

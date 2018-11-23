@@ -87,17 +87,19 @@ function love.load(args)
     _images[key] = love.graphics.newCanvas(_renderer.width, _renderer.height)
   end
 
-  _loader:set('shader', 'assets/shaders/parallax.glsl', nil, function(shader)
+  _loader:fetch('shader', 'assets/shaders/parallax.glsl')
+  _loader:fetch('shader', 'assets/shaders/anaglyph.glsl')
+  _loader:fetch('shader', 'assets/shaders/colour-blindness.glsl')
+  _loader:fetch('shader', 'assets/shaders/greyscale.glsl')
+  _loader:fetch('font', 'assets/fonts/m6x11.ttf', 32)
+
+  _loader:watch('assets/shaders/parallax.glsl', function(shader)
       shader:send('_texture_size', { _renderer.width, _renderer.height })
     end)
-  _loader:set('shader', 'assets/shaders/anaglyph.glsl', nil, function(shader)
-    shader:send('_left', _images.left)
+  _loader:watch('assets/shaders/anaglyph.glsl', function(shader)
+      shader:send('_left', _images.left)
       shader:send('_right', _images.right)
     end)
-  _loader:set('shader', 'assets/shaders/colour-blindness.glsl')
-  _loader:set('shader', 'assets/shaders/greyscale.glsl')
-
-  _loader:set('font', 'assets/fonts/m6x11.ttf', { 32 })
 
 --[[
   _renderer:chain(love.graphics.newShader('assets/shaders/stereoscopy.glsl'), function(shader)
