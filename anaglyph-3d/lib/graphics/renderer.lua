@@ -115,22 +115,34 @@ function Renderer:defer(callback, depth, mode)
   queue[#queue + 1] = { callback = callback, depth = depth or 0 }
 end
 
--- Safe iterator that excludes the null entries and additional check.
+-- Safe iterators that exclude the `nil` entries and additional check.
 local function ipairs_s(table, check)
-  local length = #table
-  local index = 0
-  return function()
+  return function(a, i)
       while true do
-        index = index + 1
-        if index > length then
+        i = i + 1
+        local v = a[i]
+        if not v then
           return nil, nil
         end
-        local value = table[index]
-        if value ~= nil and (not check or check(value)) then
-          return index, value
+        if not check or check(v) then
+          return i, v
         end
       end
-    end
+    end, table, 0
+end
+
+local function pairs_s(table, check)
+  return function(t, k)
+      while true do
+        local v = next(t, k)
+        if not v then
+          return nil, nil
+        end
+        if not check or check(v) then
+          return k, v
+        end
+      end
+    end, table, nil
 end
 
 function Renderer:draw(debug)
