@@ -20,6 +20,8 @@ freely, subject to the following restrictions:
 
 ]] --
 
+local Iterators = require('lib/collections/iterators')
+
 local Renderer = {}
 
 Renderer.__index = Renderer
@@ -115,36 +117,6 @@ function Renderer:defer(callback, depth, mode)
   queue[#queue + 1] = { callback = callback, depth = depth or 0 }
 end
 
--- Safe iterators that exclude the `nil` entries and additional check.
-local function ipairs_s(table, check)
-  return function(a, i)
-      while true do
-        i = i + 1
-        local v = a[i]
-        if not v then
-          return nil, nil
-        end
-        if not check or check(v) then
-          return i, v
-        end
-      end
-    end, table, 0
-end
-
-local function pairs_s(table, check)
-  return function(t, k)
-      while true do
-        local v = next(t, k)
-        if not v then
-          return nil, nil
-        end
-        if not check or check(v) then
-          return k, v
-        end
-      end
-    end, table, nil
-end
-
 function Renderer:draw(debug)
   local fore, back = self.buffers.fore, self.buffers.back
 
@@ -161,8 +133,7 @@ function Renderer:draw(debug)
   end
   self.pre_effects = {}
 
---  for _, effect in ipairs(self.effects) do
-  for _, effect in ipairs_s(self.effects, function(effect) return self.loader:get(effect.file) ~= nil end) do
+  for _, effect in Iterators.ipairs(self.effects, function(effect) return self.loader:get(effect.file) ~= nil end) do
     local shader = self.loader:get(effect.file)
 
     if shader:hasUniform('_time') then
