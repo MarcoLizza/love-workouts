@@ -76,12 +76,20 @@ function love.load(args)
     math.random()
   end
 
+-- 72×54	4:3
+-- 81×54	3:2
+-- 96×54	16:9
+-- 100×54	1,85:1
+-- 129×54	2.39:1
   _renderer = Renderer.new(_loader)
   _renderer:initialize(480, 270, true)
 
   for _, layer in pairs(_layers) do
-    layer.image = love.graphics.newImage(layer.file)
-    layer.image:setWrap('repeat', 'repeat') -- Using HORIZONTAL infinite wrap mode.
+    _loader:fetch('image', layer.file)
+    _loader:watch(layer.file, function(image)
+        image:setWrap('repeat', 'repeat') -- Using HORIZONTAL infinite wrap mode.
+        layer.image = image
+      end)
   end
   for key, _ in pairs(_images) do
     _images[key] = love.graphics.newCanvas(_renderer.width, _renderer.height)
@@ -90,7 +98,9 @@ function love.load(args)
   _loader:fetch('shader', 'assets/shaders/parallax.glsl')
   _loader:fetch('shader', 'assets/shaders/anaglyph.glsl')
   _loader:fetch('shader', 'assets/shaders/colour-blindness.glsl')
+--  _loader:fetch('shader', 'assets/shaders/stereoscopy.glsl')
   _loader:fetch('shader', 'assets/shaders/greyscale.glsl')
+--  _loader:fetch('shader', 'assets/shaders/vignette.glsl')
   _loader:fetch('font', 'assets/fonts/m6x11.ttf', 32)
 
   _loader:watch('assets/shaders/parallax.glsl', function(shader)
@@ -100,24 +110,25 @@ function love.load(args)
       shader:send('_left', _images.left)
       shader:send('_right', _images.right)
     end)
-
 --[[
-  _renderer:chain(love.graphics.newShader('assets/shaders/stereoscopy.glsl'), function(shader)
+  _loader:watch('assets/shaders/stereoscopy.glsl', function(shader)
       shader:send('_left', _images.left)
       shader:send('_right', _images.right)
-    end,
-    function(shader)
     end)
 ]]
+--[[
+  _loader:watch('assets/shaders/vignette.glsl', function(shader)
+      shader:send('_step', { 1.0 / _renderer.width, 1.0 / _renderer.height })
+    end)
+]]
+
   _renderer:chain('assets/shaders/anaglyph.glsl', function(shader)
       shader:send('_mode', _mode)
     end)
   _renderer:chain('assets/shaders/colour-blindness.glsl', function(shader)
       shader:send('_type', _type)
     end)
---  _renderer:chain('assets/shaders/vignette.glsl', function(shader)
---    shader:send('_step', { 1.0 / _renderer.width, 1.0 / _renderer.height })
---  end)
+--  _renderer:chain('assets/shaders/vignette.glsl')
   _renderer:chain('assets/shaders/greyscale.glsl')
 end
 
