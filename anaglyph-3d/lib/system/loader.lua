@@ -51,22 +51,15 @@ end
 function Loader.new(period, burst_count)
   local self = {
     resources = {},
-    period = period,
-    burst_count = burst_count,
+    period = period or 60,
+    burst_count = burst_count or math.huge,
     timer = nil
   }
   self.timer = Timer.new(period, function() self:refresh() end, true)
   return setmetatable(self, Loader)
 end
 
-function Loader:purge()
-  self.resources = {}
-end
-
 function Loader:preload(resources)
-  resources = {
-    { type = 'shader', file = '', args = '' }
-  }
   for _, resource in resources do
     self:set(resource.type, resource.file, unpack(resource.args))
   end
@@ -93,22 +86,25 @@ function Loader:fetch(type, file, ...)
 end
 
 function Loader:dispose(file)
-  self.resources[file:lower()] = nil
+  if file then
+    self.resources[file] = nil
+  else
+    self.resources = {}
+  end
 end
 
 function Loader:get(file)
-  return self.resources[file:lower()].value
+  return self.resources[file].value
 end
 
 function Loader:watch(file, on_loaded)
-  local resource = self.resources[file:lower()]
+  local resource = self.resources[file]
   if not resource then
     print(string.format('! uknowwn resource "%s"', file))
     return
   end
 
-  local listener = resource.listeners[on_loaded]
-  if listener then
+  if resource.listeners[on_loaded] then
     print(string.format('> listener "%s" already registered for resource "%s"', on_loaded, file))
     return
   end
@@ -122,7 +118,7 @@ function Loader:watch(file, on_loaded)
 end
 
 function Loader:unwatch(file, on_loaded)
-  local resource = self.resources[file:lower()]
+  local resource = self.resources[file]
   if not resource then
     print(string.format('! uknowwn resource "%s"', file))
     return
@@ -135,15 +131,8 @@ function Loader:unwatch(file, on_loaded)
   end
 end
 
-function Loader:call_if(file, lambda)
-  local value = self:get(file)
-  if value then
-    lambda(value)
-  end
-end
-
 function Loader:refresh()
-  local count = self.burst_count or math.huge
+  local count = self.burst_count
   for _, resource in pairs(self.resources) do
     local modtime, digest = query(resource.file, resource.modtime, resource.digest)
     if resource.modtime ~= modtime or resource.digest ~= digest then
