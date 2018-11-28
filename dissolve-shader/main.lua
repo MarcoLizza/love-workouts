@@ -6,19 +6,15 @@ local _granularity = 40
 local _threshold = 0
 
 local function generate(granularity, width, height)
-  local canvas = love.graphics.newCanvas(width, height)
-  love.graphics.push('all')
-  love.graphics.setCanvas(canvas)
+  local data = love.image.newImageData(width, height)
   local z = love.math.random() -- The third coordinate ensure a different "slice" of the noise.
   for y = 0, height -1 do
     for x = 0, width - 1 do
       local v = love.math.noise(x / granularity, y / granularity, z)
-      love.graphics.setColor(v, v, v)
-      love.graphics.points(x, y)
+      data:setPixel(x, y, v, v, v, 1.0)
     end
   end
-  love.graphics.pop()
-  return canvas
+  return love.graphics.newImage(data)
 end
 
 function love.load(args)
