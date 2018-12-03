@@ -72,9 +72,15 @@ local function bounce(t, bounced)
   return function()
       i = i + d
       if d > 0 and i >= n then
+        if bounced and bounced(t) then
+          return nil
+        end
         i = n
         d = -1
       elseif d < 0 and i <= 1 then
+        if bounced and bounced(t) then
+          return nil
+        end
         i = 1
         d = 1
       end
@@ -82,9 +88,41 @@ local function bounce(t, bounced)
     end
 end
 
+-- Safe iterators that exclude the `nil` entries and additional check.
+local function ipairs(table, check)
+  return function(a, i)
+      while true do
+        i = i + 1
+        local v = a[i]
+        if not v then
+          return nil, nil
+        end
+        if not check or check(v) then
+          return i, v
+        end
+      end
+    end, table, 0
+end
+
+local function pairs(table, check)
+  return function(t, k)
+      while true do
+        local v = next(t, k)
+        if not v then
+          return nil, nil
+        end
+        if not check or check(v) then
+          return k, v
+        end
+      end
+    end, table, nil
+end
+
 return {
   forward = forward,
   reverse = reverse,
   circular = circular,
-  bounce = bounce
+  bounce = bounce,
+  ipairs = ipairs,
+  pairs = pairs
 }

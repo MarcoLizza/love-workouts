@@ -52,7 +52,7 @@ local love = {
       wheelmoved = read_write,
 
       audio = def_fields("getActiveEffects","getActiveSourceCount","getDistanceModel",
-         "getDopplerScale","getEffect","getMaxActiveEffects","getMaxSourceEffects","getOrientation",
+         "getDopplerScale","getEffect","getMaxSceneEffects","getMaxSourceEffects","getOrientation",
          "getPosition","getRecordingDevices","getSourceCount","getVelocity","getVolume",
          "isEffectsSupported","newSource","newQueueableSource","pause","play","setDistanceModel",
          "setDopplerScale","setEffect","setMixWithSystem","setOrientation","setPosition",

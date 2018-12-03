@@ -20,6 +20,7 @@ freely, subject to the following restrictions:
 
 ]] --
 
+local Loader = require('lib/system/loader')
 local Renderer = require('lib/graphics/renderer')
 
 local ANAGLYPH_MODES = {
@@ -35,15 +36,13 @@ local COLOUR_BLINDNESS_TYPES = {
   'NORMAL', 'PROTANOPE (NO REDS)', 'DEUTERANOPE (NO GREENS)', 'TRITANOPE (NO BLUES)', 'ACHROMATOPSIA', 'BLUE-CONE MONOCHROMACY'
 }
 
+local _loader = Loader.new(1)
 local _renderer = nil
 
 local _debug = false
 
-local _font = nil
-
 local _autoscroll = true
 local _offset = 0.0
-local _parallax = nil
 local _layers = {
   { file = 'data/layers/08.png', speed = 0.0000, image = nil },
   { file = 'data/layers/07.png', speed = 0.5000, image = nil },
@@ -77,48 +76,65 @@ function love.load(args)
     math.random()
   end
 
-  _renderer = Renderer.new(10.0)
+-- 72×54	4:3
+-- 81×54	3:2
+-- 96×54	16:9
+-- 100×54	1,85:1
+-- 129×54	2.39:1
+  _renderer = Renderer.new(_loader)
   _renderer:initialize(480, 270, true)
 
-  _parallax = love.graphics.newShader('assets/shaders/parallax.glsl')
   for _, layer in pairs(_layers) do
-    layer.image = love.graphics.newImage(layer.file)
-    layer.image:setWrap('repeat', 'repeat') -- Using HORIZONTAL infinite wrap mode.
+    _loader:fetch('image', layer.file)
+    _loader:watch(layer.file, function(image)
+        image:setWrap('repeat', 'repeat') -- Using HORIZONTAL infinite wrap mode.
+        layer.image = image
+      end)
   end
   for key, _ in pairs(_images) do
     _images[key] = love.graphics.newCanvas(_renderer.width, _renderer.height)
   end
-  _parallax:send('_texture_size', { _renderer.width, _renderer.height })
 
---[[
-  _renderer:chain(love.graphics.newShader('assets/shaders/stereoscopy.glsl'), function(shader)
+  _loader:fetch('shader', 'assets/shaders/parallax.glsl')
+  _loader:fetch('shader', 'assets/shaders/anaglyph.glsl')
+  _loader:fetch('shader', 'assets/shaders/colour-blindness.glsl')
+--  _loader:fetch('shader', 'assets/shaders/stereoscopy.glsl')
+  _loader:fetch('shader', 'assets/shaders/greyscale.glsl')
+--  _loader:fetch('shader', 'assets/shaders/vignette.glsl')
+  _loader:fetch('font', 'assets/fonts/m6x11.ttf', 32)
+
+  _loader:watch('assets/shaders/parallax.glsl', function(shader)
+      shader:send('_texture_size', { _renderer.width, _renderer.height })
+    end)
+  _loader:watch('assets/shaders/anaglyph.glsl', function(shader)
       shader:send('_left', _images.left)
       shader:send('_right', _images.right)
-    end,
-    function(shader)
+    end)
+--[[
+  _loader:watch('assets/shaders/stereoscopy.glsl', function(shader)
+      shader:send('_left', _images.left)
+      shader:send('_right', _images.right)
     end)
 ]]
+--[[
+  _loader:watch('assets/shaders/vignette.glsl', function(shader)
+      shader:send('_step', { 1.0 / _renderer.width, 1.0 / _renderer.height })
+    end)
+]]
+
   _renderer:chain('assets/shaders/anaglyph.glsl', function(shader)
-      shader:send('_left', _images.left)
-      shader:send('_right', _images.right)
-    end,
-    function(shader)
       shader:send('_mode', _mode)
     end)
   _renderer:chain('assets/shaders/colour-blindness.glsl', function(shader)
-    end,
-    function(shader)
       shader:send('_type', _type)
     end)
---  _renderer:chain('assets/shaders/vignette.glsl', function(shader)
---    shader:send('_step', { 1.0 / _renderer.width, 1.0 / _renderer.height })
---  end)
+--  _renderer:chain('assets/shaders/vignette.glsl')
   _renderer:chain('assets/shaders/greyscale.glsl')
-
-  _font = love.graphics.newFont('assets/fonts/m6x11.ttf', 32)
 end
 
 function love.update(dt)
+  _loader:update(dt)
+
   if _autoscroll then
     _offset = _offset + (dt * 16.0)
   end
@@ -128,19 +144,21 @@ end
 
 function love.draw()
   _renderer:defer(function(debug)
-      love.graphics.setShader(_parallax)
+      local parallax = _loader:get('assets/shaders/parallax.glsl')
+
+      love.graphics.setShader(parallax)
 
       love.graphics.setCanvas(_images.left)
-      _parallax:send('_offset', _offset - 2) -- Don't invert direction
+      parallax:send('_offset', _offset - 2) -- Don't invert direction
       for _, layer in ipairs(_layers) do
-        _parallax:send('_speed', layer.speed)
+        parallax:send('_speed', layer.speed)
         love.graphics.draw(layer.image)
       end
 
       love.graphics.setCanvas(_images.right)
-      _parallax:send('_offset', _offset + 2)
+      parallax:send('_offset', _offset + 2)
       for _, layer in ipairs(_layers) do
-        _parallax:send('_speed', layer.speed)
+        parallax:send('_speed', layer.speed)
         love.graphics.draw(layer.image)
       end
   end, 0)
@@ -153,7 +171,8 @@ function love.draw()
       love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
       love.graphics.print(love.timer.getFPS() .. ' FPS', 0, 0)
 
-      love.graphics.setFont(_font)
+      local font = _loader:get('assets/fonts/m6x11.ttf')
+      love.graphics.setFont(font)
       love.graphics.setColor(1.0, 1.0, 1.0, 0.5)
       love.graphics.print(ANAGLYPH_MODES[_mode + 1], 0, love.graphics.getHeight() - 64)
       love.graphics.print(COLOUR_BLINDNESS_TYPES[_type + 1], 0, love.graphics.getHeight() - 32)
