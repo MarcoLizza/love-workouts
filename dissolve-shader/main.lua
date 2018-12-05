@@ -16,11 +16,59 @@ local function generate(granularity, width, height)
   end
   return love.graphics.newImage(data)
 end
+--[[
+local function Bus()
+  local listeners = {}
+  return {
+      register = function(self, event, cb)
+          listeners[event] = listeners[event] or {}
+          table.insert(listeners[event], cb)
+        end,
+      emit = function(self, event, ...)
+          for _, cb in ipairs(listeners[event]) do
+            cb(...)
+          end
+        end
+    }
+end
+]]
+local function shader_compile(shader, defines, variables)
+  local code = love.filesystem.getInfo(shader) and love.filesystem.read(shader) or shader
+
+  if defines then
+    local found = {}
+    code = code:gsub('(#define%s+)([^%s]+)(%s+)([^%s]+)', -- Match existing macros, replace value and mark as found.
+      function(define, identifier, spaces, value)
+        local v = defines[identifier]
+        if not v then
+          return define .. identifier .. spaces .. value
+        end
+        found[identifier] = true
+        return define .. identifier .. spaces .. v
+      end)
+    for identifier, value in pairs(defines) do -- Pre-prend unknow defines.
+      if not found[identifier] then
+        code = string.format('#define %s %s\n', identifier, value) .. code
+      end
+    end
+  end
+
+  if variables then
+    for identifier, value in pairs(variables) do -- Replace custom variables.
+      code = code:gsub(string.format('${%s}', identifier), value)
+    end
+  end
+
+  return love.graphics.newShader(code)
+end
 
 function love.load(args)
   _noise = generate(_granularity, love.graphics.getDimensions())
 
-  _shader = love.graphics.newShader([[
+  _shader = shader_compile([[
+#define THRESHOLD 0.05
+
+const vec4 EDGE_COLOR = vec4(1.0, 1.0, 1.0, 1.0);
 
 uniform Image _top;
 uniform Image _bottom;
@@ -28,18 +76,33 @@ uniform float _threshold;
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
 {
+#ifdef ALPHA
+    vec4 noise = texture2D(texture, texture_coords);
+
+    vec4 top = texture2D(_top, texture_coords);
+    vec4 bottom = texture2D(_bottom, texture_coords);
+
+    float alpha = _threshold - noise.r;
+    return mix(top, bottom, alpha);
+#else
     vec4 noise = texture2D(texture, texture_coords);
     float delta = _threshold - noise.r;
     if (delta < 0.0) {
       return texture2D(_bottom, texture_coords);
     }
-    if (delta > 0.025) {
+    if (delta > THRESHOLD) {
       return texture2D(_top, texture_coords);
     }
-    return vec4(1.0, 1.0, 1.0, 1.0);
+  #ifdef MIX
+    float alpha = delta / THRESHOLD;
+    return mix(texture2D(_bottom, texture_coords), EDGE_COLOR, alpha);
+  #else
+    return EDGE_COLOR;
+  #endif
+#endif
 }
-
-    ]])
+    ]], { ['MIX'] = '1' })
+--    ]], { ['ALPHA'] = '1' })
 
   _shader:send('_top', love.graphics.newImage('top.png'))
   _shader:send('_bottom', love.graphics.newImage('bottom.png'))
