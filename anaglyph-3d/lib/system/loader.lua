@@ -59,9 +59,9 @@ function Loader.new(period, burst_count)
   return setmetatable(self, Loader)
 end
 
-function Loader:preload(resources)
+function Loader:prefetch(resources)
   for _, resource in resources do
-    self:set(resource.type, resource.file, unpack(resource.args))
+    self:fetch(resource.type, resource.file, unpack(resource.args))
   end
 end
 
@@ -75,7 +75,7 @@ function Loader:fetch(type, file, ...)
   local modtime, digest = query(file) -- Detect the initial "digest"
 
   self.resources[file] = {
-    type = type,
+    type = type, -- TODO: we could also implement a "generator", created via factory from the type.
     file = file,
     args = { ... },
     listeners = {},
