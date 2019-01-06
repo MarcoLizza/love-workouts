@@ -30,10 +30,25 @@ Let's just focus on the **resources** used by the game. Actually, we are develop
 * shaders,
 * sounds/musics.
 
-This should cover most of the scenarios.
+This should cover most of the scenarios when rapidly iterating the resource editing during development.
 
 ## How?
 
+The key in implementing a *hot-reload* feature is **abstraction**, AKA when loading a resource you won't be referring to it through the native (ehm) handler, but via an alias (e.g. the name of the resource).
 
+Since the resource could be potentially reloaded any time during the life-cycle of the application you simply can't store its runtime reference (e.g. the pointer to the bitmap it represents) since in case of reload it will be a *dangling reference* to something doens't exists anymore (this, of course, in the case your are not using an SDK/library that already tracks and handles the resource changes).
+
+The solution to this is either query the resource-manager for actual resource handler each time you need or, or exploit some kind of event-based system that notifies to the interested listeners the new handler each time the resource changes.
+
+For each resource we need to track
+
+* the resource type (in order for the resource-manager to know how to "recreate" the resource when changed),
+* the resource path and file,
+* any additional parameters used when the resource was initially created (e.g. the font size),
+* resource file modification time and content digest (to compare for changes).
+* the list of current listeners for changes in the resource,
+* the resource "native" handler
+
+We choose to test both the resource file modification time **and** it's content (by storing it's hashed digest) to speed up the test phase: first we check if the file time has changed, then we load and check for changes in its content. Only if both values have changed we trigger a reload. Please note that, in any case, the latest (most recent) file modification time and content digest are stored and updated.
 
 ## Impact
