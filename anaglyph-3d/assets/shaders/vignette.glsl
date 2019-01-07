@@ -29,13 +29,15 @@ const mat3 sy = mat3(
 );
 #endif
 
-const vec3 WEIGHT = vec3(0.2125, 0.7154, 0.0721);
+const vec3 WEIGHT = vec3(0.2125, 0.7154, 0.0721); // IEC 61966-2-1
 // const vec3 WEIGHT = vec3(0.2126, 0.7152, 0.0722); // ITU-R BT.709 (CIE 1931 LUMINANCE if linear)
 // const vec3 WEIGHT = vec3(0.299, 0.587, 0.114); // rec601 luma
 // const vec3 WEIGHT = vec3(0.2627, 0.6780, 0.0593); // ITU-R BT.2100 for HDR
 
 uniform vec2 _step;
 
+// TODO: edge filter should be computed over the depth-image.
+// https://en.wikipedia.org/wiki/Cel_shading
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
     vec3 diffuse = texture2D(texture, texture_coords).rgb;
 
