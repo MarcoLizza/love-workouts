@@ -1,5 +1,6 @@
 local _max_x, _max_y
 local _time = 0
+local _fan = false
 
 local function square(x, y, s, r, g, b)
   love.graphics.setColor(0.1, 0.1, 0.1)
@@ -26,8 +27,14 @@ function love.load(args)
     math.random()
   end
 
-  _max_x = love.graphics.getWidth()
-  _max_y = love.graphics.getHeight()
+  _max_x = love.graphics.getWidth() - 1
+  _max_y = love.graphics.getHeight() - 1
+end
+
+function love.keypressed(key)
+  if key == "return" then
+    _fan = not _fan
+  end
 end
 
 function love.update(dt)
@@ -45,14 +52,23 @@ function love.draw()
       local angle = _time + r * math.pi -- Angle increase as we reach the center.
       local c, s = math.cos(angle), math.sin(angle)
       local rx, ry = c * ox - s * oy, s * ox + c * oy
---[[
-      local angle = math.atan(oy, ox)
-      angle = angle + _time + r * math.pi
-      local rx, ry = math.cos(angle), math.sin(angle)
-]]
-      local d2 = length(rx, ry)
-      local r2 = 1.0 - d2
-      square(x, y, 7, math.abs(rx), math.abs(ry), r2)
+
+      local v = math.min(1.0, length(rx, ry))
+      v = 1.0 - v * v -- Tweak to smooth the color change differently.
+
+      if _fan then
+        local rad = math.atan2(ry, rx) + math.pi -- Find the octanct of the rotated point to pick the color.
+        local deg = math.floor(rad * (180.0 / math.pi)) % 180
+        if deg > 3 and deg < 87 then
+          square(x, y, 7, 0.0, 0.5, v)
+        elseif deg > 93 and deg < 177 then
+          square(x, y, 7, 0.0, v, 0.0)
+        else
+          square(x, y, 7, 0.0, 0.0, 0.0)
+        end
+      else
+        square(x, y, 7, rx, ry, v)
+      end
     end
   end
 end
